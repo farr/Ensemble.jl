@@ -1,4 +1,4 @@
-module EmceeGibbs
+module EnsembleGibbs
 
 function propose(ps::Array{Float64, 2}, qs::Array{Float64, 2})
     n = size(ps,2)

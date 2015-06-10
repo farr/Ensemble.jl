@@ -1,6 +1,6 @@
-module TestEmcee
+module TestEnsemble
 
-using Emcee
+using Ensemble
 
 using Base.Test: @test_approx_eq_eps
 
@@ -20,14 +20,14 @@ function testgaussian()
     end
 
     ps = randn(ndim, 100)
-    lnps = Emcee.lnprobs(ps, lnprob)
+    lnps = Ensemble.lnprobs(ps, lnprob)
     # Burnin 1000 steps
     for i in 1:1000
-        ps, lnps = Emcee.update(ps, lnps, lnprob)
+        ps, lnps = Ensemble.update(ps, lnps, lnprob)
     end
 
     # Run 1000 steps
-    chain, chainlnp = Emcee.run_mcmc(ps, lnps, lnprob, 1000, thin=10)
+    chain, chainlnp = Ensemble.run_mcmc(ps, lnps, lnprob, 1000, thin=10)
 
     chain_mean = zeros(ndim)
     chain_sigma = zeros(ndim,ndim)
@@ -153,13 +153,13 @@ function testsinusoid()
             p0[j,i] = ptrue[j] + 1e-4*randn()
         end
     end
-    lnp0 = Emcee.lnprobs(p0, lnprob)
+    lnp0 = Ensemble.lnprobs(p0, lnprob)
 
     for i in 1:1000
-        p0, lnp0 = Emcee.update(p0, lnp0, lnprob)
+        p0, lnp0 = Ensemble.update(p0, lnp0, lnprob)
     end
 
-    chain, chainlnp = Emcee.run_mcmc(p0, lnp0, lnprob, 1000, thin=10)
+    chain, chainlnp = Ensemble.run_mcmc(p0, lnp0, lnprob, 1000, thin=10)
 
     as = exp(chain[1,:,:])
     Ps = exp(chain[2,:,:])

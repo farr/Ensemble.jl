@@ -1,7 +1,7 @@
-module TestEmceeGibbs
+module TestEnsembleGibbs
 
 using Base.Test: @test
-using EmceeGibbs
+using EnsembleGibbs
 using Stats
 
 const snr_half = 3.0
@@ -84,17 +84,17 @@ function testall()
             ps[j,i] = ptrue[j] + 1e-3*randn()
         end
     end
-    gs = EmceeGibbs.gibbses(ps, [nothing for i in 1:100], gibbsupdate)
-    lnprobs = EmceeGibbs.lnprobs(ps, gs, lnprob)
+    gs = EnsembleGibbs.gibbses(ps, [nothing for i in 1:100], gibbsupdate)
+    lnprobs = EnsembleGibbs.lnprobs(ps, gs, lnprob)
 
     for i in 1:1000
-        ps, gs, lnprobs = EmceeGibbs.update(ps, gs, lnprobs, lnprob, gibbsupdate)
+        ps, gs, lnprobs = EnsembleGibbs.update(ps, gs, lnprobs, lnprob, gibbsupdate)
     end
 
     pts = zeros(3, 100, 100)
     for i in 1:100
         for j in 1:10
-            ps, gs, lnprobs = EmceeGibbs.update(ps, gs, lnprobs, lnprob, gibbsupdate)
+            ps, gs, lnprobs = EnsembleGibbs.update(ps, gs, lnprobs, lnprob, gibbsupdate)
         end
         pts[:,:,i] = ps
     end
