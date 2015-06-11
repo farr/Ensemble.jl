@@ -1,8 +1,8 @@
 module TestEnsembleGibbs
 
 using Base.Test: @test
-using EnsembleGibbs
-using Stats
+using Ensemble
+using Ensemble.Stats: randpoi, logsumexp
 
 const snr_half = 3.0
 const mu = log(3.0)

@@ -1,7 +1,8 @@
 module TestStats
 
 using Base.Test: @test_approx_eq_eps, @test
-using Stats
+using Ensemble
+using Ensemble.Stats: logsumexp
 
 function testlogsumexp_random()
     for i in 1:100

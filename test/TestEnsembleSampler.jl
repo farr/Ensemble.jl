@@ -1,4 +1,4 @@
-module TestEnsemble
+module TestEnsembleSampler
 
 using Ensemble
 
@@ -20,14 +20,14 @@ function testgaussian()
     end
 
     ps = randn(ndim, 100)
-    lnps = Ensemble.lnprobs(ps, lnprob)
+    lnps = EnsembleSampler.lnprobs(ps, lnprob)
     # Burnin 1000 steps
     for i in 1:1000
-        ps, lnps = Ensemble.update(ps, lnps, lnprob)
+        ps, lnps = EnsembleSampler.update(ps, lnps, lnprob)
     end
 
     # Run 1000 steps
-    chain, chainlnp = Ensemble.run_mcmc(ps, lnps, lnprob, 1000, thin=10)
+    chain, chainlnp = EnsembleSampler.run_mcmc(ps, lnps, lnprob, 1000, thin=10)
 
     chain_mean = zeros(ndim)
     chain_sigma = zeros(ndim,ndim)
@@ -153,13 +153,13 @@ function testsinusoid()
             p0[j,i] = ptrue[j] + 1e-4*randn()
         end
     end
-    lnp0 = Ensemble.lnprobs(p0, lnprob)
+    lnp0 = EnsembleSampler.lnprobs(p0, lnprob)
 
     for i in 1:1000
-        p0, lnp0 = Ensemble.update(p0, lnp0, lnprob)
+        p0, lnp0 = EnsembleSampler.update(p0, lnp0, lnprob)
     end
 
-    chain, chainlnp = Ensemble.run_mcmc(p0, lnp0, lnprob, 1000, thin=10)
+    chain, chainlnp = EnsembleSampler.run_mcmc(p0, lnp0, lnprob, 1000, thin=10)
 
     as = exp(chain[1,:,:])
     Ps = exp(chain[2,:,:])

@@ -1,4 +1,4 @@
-module Ensemble
+module EnsembleSampler
 
 ## Store ensembles as (ndim, nwalkers) arrays.
 
