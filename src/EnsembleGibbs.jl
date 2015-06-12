@@ -81,4 +81,26 @@ function update(ensemble, gibbs, lnprob, lnprobfn, gibbsupdate)
     ensemble, gibbs, lnprob
 end
 
+function run_mcmc(ensemble, gibbs, lnprobs, lnprobfn, gibbsupdate, steps; thin=1)
+    nsave = div(steps, thin)
+
+    chain = zeros((size(ensemble, 1), size(ensemble, 2), nsave))
+    gibbschain = Array{Any,2}(size(ensemble, 2), nsave)
+    chainlnprob = zeros((size(ensemble, 2), nsave))
+    isave = 1
+    for i in 1:steps
+        ensemble, gibbs, lnprobs = update(ensemble, gibbs, lnprobs, lnprobfn, gibbsupdate)
+
+        if i % thin == 0
+            chain[:,:,isave] = ensemble
+            gibbschain[:, isave] = gibbs
+            chainlnprob[:,isave] = lnprobs
+
+            isave = isave + 1
+        end
+    end
+
+    chain, gibbschain, chainlnprob
+end
+
 end
