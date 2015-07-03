@@ -24,6 +24,18 @@ function randpoi(lam)
     end
 end
 
+randpoi(lam, n::Int) = Float64[randpoi(lam) for i in 1:n]
+
+function randpoi(lam, size::Tuple)
+    ns = zeros(Int, size)
+
+    for i in eachindex(ns)
+        ns[i] = randpoi(lam)
+    end
+
+    ns
+end
+
 @doc doc"""Compute `log(exp(x) + exp(y))` but accurately, and without
 risk of overflow.
 
