@@ -1,40 +1,6 @@
 module Stats
 
-export randpoi, logsumexp
-
-@doc doc"""Return a Poisson-distributed integer with mean `lam`
-
-""" ->
-function randpoi(lam)
-    if lam > 100.0
-        sigma = sqrt(lam)
-        mu = lam
-        round(Int, lam + sigma*randn())
-    else
-        x = 0
-        p = exp(-lam)
-        s = p
-        u = rand()
-        while u > s
-            x += 1
-            p *= lam / x
-            s += p
-        end
-        x
-    end
-end
-
-randpoi(lam, n::Int) = Float64[randpoi(lam) for i in 1:n]
-
-function randpoi(lam, size::Tuple)
-    ns = zeros(Int, size)
-
-    for i in eachindex(ns)
-        ns[i] = randpoi(lam)
-    end
-
-    ns
-end
+export logsumexp
 
 @doc doc"""Compute `log(exp(x) + exp(y))` but accurately, and without
 risk of overflow.

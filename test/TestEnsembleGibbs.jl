@@ -1,8 +1,9 @@
 module TestEnsembleGibbs
 
 using Base.Test: @test
+using Distributions
 using Ensemble
-using Ensemble.Stats: randpoi, logsumexp
+using Ensemble.Stats: logsumexp
 
 const snr_half = 3.0
 const mu = log(3.0)
@@ -28,7 +29,7 @@ end
 @vectorize_1arg Number logpnselect
 
 function draw(lambda=lambda, mu=mu, sigma=sigma)
-    n = randpoi(lambda)
+    n = rand(Poisson(lambda))
     xs = exp(mu + sigma*randn(n))
     psel = exp(logpselect(xs))
 
