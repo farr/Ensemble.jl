@@ -5,14 +5,23 @@ bounded_param(x, low, high) = log(x-low) - log(high-x)
 function bounded_value(p, low, high)
     if p > 0
         ep = exp(-p)
-        (high + ep*low)/(1.0 + ep)
+        (high + ep*low)/(one(p) + ep)
     else
         ep = exp(p)
-        (high*ep + low)/(1.0 + ep)
+        (high*ep + low)/(one(p) + ep)
     end
 end
 
+bounded_value(x::Vector, low, high) = [bounded_value(x[i], low, high) for i in eachindex(x)]
+
 bounded_logjac(x, p, low, high) = log((high-x)*(x-low)/(high-low))
+function bounded_logjac(x::Vector, p::Vector, low, high)
+    lj = 0.0
+    for i in eachindex(x)
+        lj += bounded_logjac(x[i], p[i], low, high)
+    end
+    lj
+end
 
 function increasing_params(x)
     n = length(x)
@@ -58,9 +67,9 @@ function simplex_params(x)
     n = length(x)
 
     p = zeros(n-1)
-    remaining = 1.0
+    remaining = one(p[1])
     for i in 1:n-1
-        p[i] = bounded_param(x[i], 0, remaining)
+        p[i] = bounded_param(x[i], zero(x[i]), remaining)
         remaining = remaining - x[i]
     end
 
@@ -71,9 +80,9 @@ function simplex_values(p)
     n = length(p)
 
     x = zeros(n+1)
-    remaining = 1.0
+    remaining = one(p[1])
     for i in 1:n
-        x[i] = bounded_value(p[i], 0, remaining)
+        x[i] = bounded_value(p[i], zero(p[i]), remaining)
         remaining = remaining - x[i]
     end
 
@@ -87,7 +96,7 @@ function simplex_logjac(x, p)
     remaining = 1.0
 
     for i in 1:length(p)
-        lj += bounded_logjac(x[i], p[i], 0, remaining)
+        lj += bounded_logjac(x[i], p[i], zero(x[i]), remaining)
         remaining = remaining - x[i]
     end
 
