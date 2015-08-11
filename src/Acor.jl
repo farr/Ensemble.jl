@@ -63,4 +63,78 @@ function acl(xs::Array{Float64, 3})
 
     acls
 end
+
+""" Returns an estimate of the Gelman-Rubin R statistic for each
+parameter, treating each walker as an independent simulation.  The R
+statistic estimates the factor by which the variance of the estimated
+distribution can be reduced by running the simulation longer."""
+function gelman_rubin_rs(ps)
+    ndim, nwalkers, nsteps = size(ps)
+
+    rs = zeros(ndim)
+    means = zeros(ndim, nwalkers)
+    vars = zeros(ndim, nwalkers)
+
+    for i in 1:ndim
+        for j in 1:nwalkers
+            for k in 1:nsteps
+                means[i,j] += ps[i,j,k]
+            end
+            means[i,j] /= nsteps
+
+            for k in 1:nsteps
+                x = ps[i,j,k] - means[i,j]
+                vars[i,j] += x*x
+            end
+            vars[i,j] /= nsteps
+        end
+
+        Bon = var(means[i,:])
+        W = mean(vars[i,:])
+
+        s2 = (nsteps-1.0)/nsteps*W + Bon
+
+        rs[i] = s2/W
+    end
+
+    rs
+end
+
+""" An estimate of the AIC (Akaike Information Criterion) from the
+MCMC samples of the log-likelihood.  The AIC is `-2.0*max(lnps) +
+nparams`.  The estimate assumes Gaussianity of the likelihood
+function; under this assumption the mean of the log-likelihood is
+`nparams/2.0` below the maximum and the variance of the log-likelihood
+is `nparams/2.0`.  So the estimate of the AIC is 
+
+    waic = -2.0*mean(lnps) + 2.0*var(lnps)
+
+This estimate is related to (or equal to?) the WAIC described by XXXX
+(Gelman ref.).
+"""
+waic(lnps) = -2.0*mean(lnps) + 2.0*var(lnps)
+
+"""Returns an array of acceptance rates for each walker from the given
+chain. """
+function acceptance_rate(ps)
+    nw = size(ps, 2)
+    nt = size(ps, 3)
+
+    ar = zeros(nw)
+
+    for j in 1:nw
+        acc = 0
+        for k in 1:nt-1
+            if ps[:,j,k] == ps[:,j,k+1]
+                # Pass
+            else
+                acc += 1
+            end
+        end
+        ar[j] = float(acc)/float(nt)
+    end
+
+    ar
+end
+
 end
