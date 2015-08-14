@@ -1,5 +1,7 @@
 module EnsembleSampler
 
+using Acor
+
 ## Store ensembles as (ndim, nwalkers) arrays.
 
 function propose(ps::Array{Float64, 2}, qs::Array{Float64, 2})
@@ -96,6 +98,35 @@ function run_mcmc(ensemble, lnprob, lnprobfn, steps; thin=1)
     end
 
     chain, chainlnprob
+end
+
+function run_to_neff(ensemble, lnprob, lnprobfn, neff; callback=nothing)
+    n = 8*neff
+    thin = 1
+
+    ps = reshape(ensemble, (size(ensemble,1), size(ensemble,2), 1))
+    lnps = reshape(lnprob, (size(lnprob,1), 1))
+    
+    while true
+        ps, lnps = run_mcmc(ps[:,:,end], lnps[:,end], lnprobfn, n, thin=thin)
+
+        if !(callback == nothing)
+            callback(ps, lnps, n, thin)
+        end
+        
+        acls = Acor.acl(ps)
+        amax = maximum(acls)
+        ne = size(ps, 2)/amax
+
+        if ne > neff
+            break
+        end
+
+        n *= 2
+        thin *= 2
+    end
+
+    ps, lnps
 end
 
 end
