@@ -103,4 +103,39 @@ function simplex_logjac(x, p)
     lj
 end
 
+function unit_disk_param(z)
+    x = z[1]
+    y = z[2]
+
+    r2 = x*x + y*y
+
+    a = 1.0 - r2
+
+    Float64[x/a, y/a]
+end
+
+function unit_disk_value(p)
+    u = p[1]
+    v = p[2]
+
+    R2 = u*u + v*v
+    R = sqrt(R2)
+
+    r = 0.5*(sqrt(4.0*R2 + 1.0) - 1.0)/R
+
+    x = u*r/R
+    y = v*r/R
+
+    Float64[x, y]
+end
+
+function unit_disk_logjac(z, p)
+    x = z[1]
+    y = z[2]
+
+    r2 = x*x + y*y
+
+    3.0*log1p(-r2) - log1p(r2)
+end
+
 end
