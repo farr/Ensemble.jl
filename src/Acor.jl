@@ -137,4 +137,12 @@ function acceptance_rate(ps)
     ar
 end
 
+""" Returns the acceptance rate given that the chain `ps` has been
+thinned by `thin`."""
+function acceptance_rate(ps, thin)
+    ar = acceptance_rate(ps)
+
+    1 - exp(log1p(-ar)/thin)
+end
+
 end
