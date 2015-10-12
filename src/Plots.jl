@@ -3,8 +3,6 @@ module Plots
 using Colors
 using Gadfly
 
-""" Returns an array of layers containing  """
-
 function chain_plot_layers(ps)
     niter = size(ps, 3)
     ndim = size(ps, 1)
@@ -15,7 +13,7 @@ function chain_plot_layers(ps)
     mu = mean(mus, 3)
     sigma = std(mus, 3)
 
-    [layer(x=1:niter, y=(mus[i,1,:]-mu[i,1,1])/sigma[i,1,1], Geom.line, Theme(default_color=color(AlphaColorValue(cs[i], 1.0)))) for i in 1:ndim]
+    [layer(x=1:niter, y=(mus[i,1,:]-mu[i,1,1])/sigma[i,1,1], Geom.line, Theme(default_color=cs[i])) for i in 1:ndim]
 end
 
 function chain_plot(ps)
@@ -26,7 +24,7 @@ function lnprob_plot(lnps; all=false)
     nw = size(lnps, 1)
     nt = size(lnps, 2)
     if all
-        cs = Color.distinguishable_colors(nw)
+        cs = Colors.distinguishable_colors(nw)
         layers = [layer(x=1:nt, y=lnps[i,:], Geom.line, Theme(default_color=cs[i])) for i in 1:nw]
         plot(layers...)
     else
@@ -38,7 +36,7 @@ function parameter_plot(ps, i)
     nwalk = size(ps, 2)
     ntime = size(ps, 3)
 
-    colors = Color.distinguishable_colors(nwalk)
+    colors = Colors.distinguishable_colors(nwalk)
 
     layers = [layer(x=1:ntime, y=ps[i,j,:], Geom.line, Theme(default_color=colors[j])) for j in 1:nwalk]
     plot(layers...)
