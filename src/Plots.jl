@@ -1,6 +1,6 @@
 module Plots
 
-using Color
+using Colors
 using Gadfly
 
 """ Returns an array of layers containing  """

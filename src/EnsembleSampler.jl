@@ -1,6 +1,6 @@
 module EnsembleSampler
 
-using Acor
+using ..Acor
 
 ## Store ensembles as (ndim, nwalkers) arrays.
 
