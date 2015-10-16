@@ -28,7 +28,7 @@ function lnprob_plot(lnps; all=false)
         layers = [layer(x=1:nt, y=lnps[i,:], Geom.line, Theme(default_color=cs[i])) for i in 1:nw]
         plot(layers...)
     else
-        plot(x=1:nw, y=mean(lnps, 1), Geom.line)
+        plot(x=1:nt, y=mean(lnps, 1), Geom.line)
     end
 end
 
