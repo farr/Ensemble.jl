@@ -1,10 +1,15 @@
 using Ensemble
 using Base.Test
 
-using TestStats
-using TestEnsembleSampler
-using TestEnsembleGibbs
-using TestEnsembleNest
+include("TestStats.jl")
+include("TestEnsembleSampler.jl")
+include("TestEnsembleGibbs.jl")
+include("TestEnsembleNest.jl")
+
+using .TestStats
+using .TestEnsembleSampler
+using .TestEnsembleGibbs
+using .TestEnsembleNest
 
 TestStats.testall()
 TestEnsembleSampler.testall()
