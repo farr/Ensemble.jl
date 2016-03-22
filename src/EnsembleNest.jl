@@ -1,7 +1,7 @@
 module EnsembleNest
 
 using ..EnsembleSampler
-using StatsFuns
+using ..Stats
 
 export NestState, ndim, nlive, ndead, retire!, logZ, logdZ, postsample, run!
 
@@ -46,6 +46,10 @@ function ndead(n::NestState)
 end
 
 function retire!(n::NestState)
+    retire!(n::NestState, true)
+end
+
+function retire!(n::NestState, verbose)
     nd = ndim(n)
     nl = nlive(n)
 
@@ -69,6 +73,8 @@ function retire!(n::NestState)
     ll = n.livelogls[i]
     lp = n.livelogps[i]
 
+    nacc = 0
+    
     for i in 1:n.nmcmc
         q = n.livepts[:,rand(1:nl)]
         z = exp(log(0.5) + rand()*(log(2.0)-log(0.5)))
@@ -81,6 +87,7 @@ function retire!(n::NestState)
         if log(rand()) < logpacc
             newll = n.likelihood(newpt)
             if newll > n.loglthresh
+                nacc += 1
                 pt = newpt
                 ll = newll
                 lp = newlp
@@ -92,6 +99,10 @@ function retire!(n::NestState)
     n.livelogls[imin] = ll
     n.livelogps[imin] = lp
 
+    if verbose
+        println("Retired point with ll = $(n.deadlogls[end])")
+    end
+    
     n
 end
 
@@ -135,9 +146,13 @@ function postsample(n::NestState)
 end
 
 function run!(n::NestState, dZStop)
+    run!(n, dZStop, true)
+end
+
+function run!(n::NestState, dZStop, verbose)
     while true
         for i in 1:nlive(n)
-            retire!(n)
+            retire!(n, verbose)
         end
 
         lZ = logZ(n)
