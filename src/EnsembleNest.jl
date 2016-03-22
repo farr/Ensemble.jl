@@ -99,7 +99,7 @@ function retire!(n::NestState, verbose)
     n.livelogls[imin] = ll
     n.livelogps[imin] = lp
 
-    facc = float(nacc)/float(n.mcmc)
+    facc = float(nacc)/float(n.nmcmc)
 
     if nacc == 0
         n.nmcmc = 2*n.nmcmc
