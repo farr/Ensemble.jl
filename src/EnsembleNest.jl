@@ -100,7 +100,7 @@ function retire!(n::NestState, verbose)
     n.livelogps[imin] = lp
 
     if verbose
-        println("Retired point with ll = $(n.deadlogls[end])")
+        println("Retired point with ll = $(n.deadlogls[end]); accept = $(float(nacc)/float(n.nmcmc))")
     end
     
     n
