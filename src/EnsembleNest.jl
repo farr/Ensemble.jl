@@ -9,6 +9,7 @@ type NestState
     likelihood
     prior
     nmcmc::Int
+    nmcmc_exact::Float64
     livepts::Array{Float64, 2}
     livelogps::Array{Float64, 1}
     livelogls::Array{Float64, 1}
@@ -30,7 +31,7 @@ function NestState(logl, logp, pts::Array{Float64, 2}, nmcmc)
         livelogls[i] = logl(pts[:,i])
     end
 
-    NestState(logl, logp, nmcmc, copy(pts), livelogps, livelogls, zeros((ndim,0)), zeros(0), zeros(0), 0.0, -Inf)
+    NestState(logl, logp, nmcmc, nmcmc, copy(pts), livelogps, livelogls, zeros((ndim,0)), zeros(0), zeros(0), 0.0, -Inf)
 end
 
 function ndim(n::NestState)
@@ -102,13 +103,14 @@ function retire!(n::NestState, verbose)
     facc = float(nacc)/float(n.nmcmc)
 
     if nacc == 0
-        n.nmcmc = 2*n.nmcmc
+        n.nmcmc_exact = (1.0 + 1.0/nl)*n.nmcmc_exact 
     else
-        n.nmcmc = 10*(int(round(2/facc - 1)))
+        n.nmcmc_exact = (1.0 - 1.0/nl)*n.nmcmc_exact + 10.0/nl*(2.0/facc - 1.0)
     end
+    n.nmcmc = int(round(n.nmcmc_exact))
 
     if verbose
-        println("Retired point with ll = $(n.deadlogls[end]); accept = $(float(nacc)/float(n.nmcmc))")
+        println("Retired point with ll = $(n.deadlogls[end]); accept = $(facc); next nmcmc = $(n.nmcmc)")
     end
     
     n
