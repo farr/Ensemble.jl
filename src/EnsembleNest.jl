@@ -99,6 +99,14 @@ function retire!(n::NestState, verbose)
     n.livelogls[imin] = ll
     n.livelogps[imin] = lp
 
+    facc = float(nacc)/float(n.mcmc)
+
+    if nacc == 0
+        n.nmcmc = 2*n.nmcmc
+    else
+        n.nmcmc = 10*(int(round(2/facc - 1)))
+    end
+
     if verbose
         println("Retired point with ll = $(n.deadlogls[end]); accept = $(float(nacc)/float(n.nmcmc))")
     end
