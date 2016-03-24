@@ -102,12 +102,17 @@ function retire!(n::NestState, verbose)
 
     facc = float(nacc)/float(n.nmcmc)
 
+    # Based on past acceptance rate, estimate the best-possible bpACL
+    # = 2/p - 1), and then plan to run for 10*bpACL.  Average the plan
+    # over the past nlive retirings to compute the next mcmc length.
+    # If there were no acceptances, plan to run for twice as long
+    # (still averaging over the last nlive retirings).
     if nacc == 0
         n.nmcmc_exact = (1.0 + 1.0/nl)*n.nmcmc_exact 
     else
         n.nmcmc_exact = (1.0 - 1.0/nl)*n.nmcmc_exact + 10.0/nl*(2.0/facc - 1.0)
     end
-    n.nmcmc = int(round(n.nmcmc_exact))
+    n.nmcmc = round(Int,n.nmcmc_exact)
 
     if verbose
         println("Retired point with ll = $(n.deadlogls[end]); accept = $(facc); next nmcmc = $(n.nmcmc)")
