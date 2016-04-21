@@ -174,7 +174,7 @@ function run!(n::NestState, dZStop, verbose)
         ldZ = logdZ(n)
 
         if verbose
-            println("Now evolved for $(nlive(n)) steps, dZ/Z = $(exp(ldZ-lZ))")
+            println("Now evolved for $(ndead(n)) steps, dZ/Z = $(exp(ldZ-lZ))")
         end
         
         if ldZ - lZ < log(dZStop)
