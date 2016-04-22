@@ -64,6 +64,31 @@ function acl(xs::Array{Float64, 3})
     acls
 end
 
+""" Returns an array of shape `(ndim, nwalkers*nsteps)` where suitable
+for thinning to generate independent samples.
+
+This involves both a flattening and a dimension-permutation, so that
+successive samples from the same ensemble don't sit adjacent to each
+other in memory."""
+function flatten(pts)
+    p = permutedims(pts, (1, 3, 2))
+    reshape(p, (size(p,1), size(p,2)*size(p,3)))
+end
+
+""" Thins an ensemble by the maximum autocorrelation length of the
+    parameters in the ensemble. """
+function thin(pts)
+    l = acl(pts)
+
+    if l == Inf
+        warn("Cannot thin because ACL is infinite.")
+        zeros(size(pts, 1), size(pts, 2), 0)
+    else
+        n = ceil(l)
+        pts[:,:,1:n:end]
+    end
+end
+
 """ Returns an estimate of the Gelman-Rubin R statistic for each
 parameter, treating each walker as an independent simulation.  The R
 statistic estimates the factor by which the variance of the estimated
