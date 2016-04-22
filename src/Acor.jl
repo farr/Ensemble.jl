@@ -78,7 +78,7 @@ end
 """ Thins an ensemble by the maximum autocorrelation length of the
     parameters in the ensemble. """
 function thin(pts)
-    l = acl(pts)
+    l = maximum(acl(pts))
 
     if l == Inf
         warn("Cannot thin because ACL is infinite.")
