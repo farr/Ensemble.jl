@@ -84,7 +84,7 @@ function thin(pts)
         warn("Cannot thin because ACL is infinite.")
         zeros(size(pts, 1), size(pts, 2), 0)
     else
-        n = ceil(l)
+        n = convert(Int, ceil(l))
         pts[:,:,1:n:end]
     end
 end
