@@ -146,18 +146,21 @@ function postsample(n::NestState)
     loglivewt = n.logx - log(nl)
     
     pts = cat(2, n.deadpts, n.livepts)
+    lls = cat(1, n.deadlogls, n.livelogls)
     logwts = cat(1, n.deadlogls + n.deadlogwts, n.livelogls + loglivewt)
 
     logwtmax = maximum(logwts)
     post = zeros((nd, 0))
+    logls = Float64[]
 
     for i in 1:size(pts, 2)
         if logwtmax + log(rand()) < logwts[i]
             post = cat(2, post, reshape(pts[:,i], (nd, 1)))
+            logls = push!(logls, lls[i])
         end
     end
 
-    post
+    post, logls
 end
 
 function run!(n::NestState, dZStop)
@@ -181,6 +184,16 @@ function run!(n::NestState, dZStop, verbose)
             break
         end
     end
+end
+
+function dic(lls::Array{Float64, 1})
+    -2.0*(mean(lls) - var(lls))
+end
+
+function dic(ns::NestState)
+    _, lls = postsample(ns)
+
+    dic(lls)
 end
 
 end
