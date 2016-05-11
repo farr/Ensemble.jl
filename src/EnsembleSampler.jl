@@ -102,11 +102,16 @@ end
 
 function run_to_neff(ensemble, lnprob, lnprobfn, neff; callback=nothing)
     n = 8*neff
+    n0 = n
+    nd = size(ensemble, 1)
+    nw = size(ensemble, 2)
     thin = 1
 
-    ps = reshape(ensemble, (size(ensemble,1), size(ensemble,2), 1))
-    lnps = reshape(lnprob, (size(lnprob,1), 1))
+    ps = reshape(ensemble, (nd, nw, 1))
+    lnps = reshape(lnprob, (nw, 1))
     
+    lnpmax = maximum(lnps)
+
     while true
         ps, lnps = run_mcmc(ps[:,:,end], lnps[:,end], lnprobfn, n, thin=thin)
 
@@ -116,14 +121,71 @@ function run_to_neff(ensemble, lnprob, lnprobfn, neff; callback=nothing)
         
         acls = Acor.acl(ps)
         amax = maximum(acls)
-        ne = size(ps, 2)/amax
+        nee = size(ps, 3)/amax
 
-        if ne > neff
+        if nee > neff
             break
         end
 
-        n *= 2
-        thin *= 2
+        # Now check whether we need to re-centre around the maximum...
+        lpm = maximum(lnps)
+
+        if lpm > lnpmax + 2.0*sqrt(nd/2.0) # If we have increased max log(L) by 2-sigma
+            ne = size(ps, 3)
+
+            # Count number of samples we have above mean - 3*sigma
+            lnpthresh = lpm - nd/2.0 - 3.0*sqrt(nd/2.0)  
+
+            pslnps_above = Set()
+            for i in 1:nw
+                for j in 1:ne
+                    p = ps[:,i,j]
+                    l = lnps[i,j]
+
+                    if l > lnpthresh
+                        push!(pslnps_above, (p,l))
+                    end
+                end
+            end
+            na = length(pslnps_above)
+
+            if na > 2*nd
+                # Then we have at least 2*nd samples above threshold,
+                # and we can re-start the sampling from general
+                # position
+                lnpmax = lpm
+                n = n0
+                thin = 1
+
+                ps_above = zeros(nd, na)
+                lnps_above = zeros(na)
+                for (i, (p, lp)) in enumerate(pslnps_above)
+                    ps_above[:,i] = p
+                    lnps_above[i] = lp
+                end
+            
+                new_ps = zeros(nd, nw, 1)
+                new_lnps = zeros(nw, 1)
+
+                for i in 1:nw
+                    p = nothing
+                    l = -Inf
+                    while l < lnpthresh
+                        j = rand(1:na)
+                        p = ps_above[:,j]
+                        l = lnps_above[j]
+                    end
+                    new_ps[:,i,1] = p
+                    new_lnps[i,1] = l
+                end
+                
+                ps = new_ps
+                lnps = new_lnps
+            end
+        else            
+            n *= 2
+            thin *= 2
+        end
     end
 
     ps, lnps
