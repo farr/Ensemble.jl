@@ -100,6 +100,10 @@ function run_mcmc(ensemble, lnprob, lnprobfn, steps; thin=1)
     chain, chainlnprob
 end
 
+function basic_callback(pts, lnprobs, n, thin)
+    println("Advanced for $(n) steps (thin = $(thin)); (max, mean, var)(log(pi)) = $(maximum(lnprobs)), $(mean(lnprobs)), $(var(lnprobs))")
+end
+
 function run_to_neff(ensemble, lnprob, lnprobfn, neff; callback=nothing)
     n = 8*neff
     n0 = n
