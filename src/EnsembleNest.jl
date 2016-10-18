@@ -5,6 +5,9 @@ using ..Stats
 
 export NestState, ndim, nlive, ndead, retire!, logZ, logdZ, postsample, run!
 
+"""
+Nested sampling state object.
+"""
 type NestState
     likelihood
     prior
@@ -20,6 +23,19 @@ type NestState
     loglthresh::Float64
 end
 
+"""
+    NestState(loglike, logprior, init, nmcmc)
+
+Return a `NestState` object initialised from the like points in the 2D
+array `init` using the given log-likelihood and log-prior functions.
+
+`nmcmc` will be used initially to control the number of steps taken
+before generating a live point to replace the low-likelihood point
+that is being retired.  This parameter will be adjusted in a control
+loop that tries to ensure that successive live points are
+uncorrelated, as described below in the docs for `retire!`.  A setting
+of `128` is a reasonable default.  
+"""
 function NestState(logl, logp, pts::Array{Float64, 2}, nmcmc)
     npts = size(pts, 2)
     ndim = size(pts, 1)
@@ -34,14 +50,17 @@ function NestState(logl, logp, pts::Array{Float64, 2}, nmcmc)
     NestState(logl, logp, nmcmc, nmcmc, copy(pts), livelogps, livelogls, zeros((ndim,0)), zeros(0), zeros(0), 0.0, -Inf)
 end
 
+"""Return the dimension of the problem in `n`."""
 function ndim(n::NestState)
     size(n.livepts, 1)
 end
 
+"""Return the number of live points."""
 function nlive(n::NestState)
     size(n.livepts, 2)
 end
 
+"""Return the number of dead (retired) points."""
 function ndead(n::NestState)
     size(n.deadpts, 2)
 end
@@ -50,6 +69,22 @@ function retire!(n::NestState)
     retire!(n::NestState, true)
 end
 
+"""
+    retire!(nstate, verbose=true)
+
+Retire the lowest-likelihood live point, using the stretch move in an
+MCMC to produce its replacement.  If `verbose == true` then print
+information on the retired point and the number of MCMC steps used.
+
+The number of MCMC steps is adjusted so that it approaches
+`10*(2/accept_rate - 1)` exponentially with a rate that is
+`1/nlive(nstate)`.  If each accepted stretch move generated a truly
+independent point, this would correspond to running for 10
+autocorrelation lengths of the resulting series to produce the
+replacement live point.  The factor 10 is a "safety factor", and the
+exponential approach with rate constant ensures that the internal MCMC
+adapts to the "local" conditions of the likelihood vs. prior curve.
+"""
 function retire!(n::NestState, verbose)
     nd = ndim(n)
     nl = nlive(n)
@@ -121,6 +156,9 @@ function retire!(n::NestState, verbose)
     n
 end
 
+"""
+Return the (natural) log of the evidence.
+"""
 function logZ(n::NestState)
     nl = nlive(n)
     
@@ -132,6 +170,8 @@ function logZ(n::NestState)
     logsumexp(logZdead, logZlive)
 end
 
+""" Return an estimate of the (natural) log of the uncertainty in the
+evidence given the current sampling state.  """
 function logdZ(n::NestState)
     logZlow = minimum(n.livelogls) + n.logx
     logZhigh = maximum(n.livelogls) + n.logx
@@ -139,6 +179,8 @@ function logdZ(n::NestState)
     logZhigh + log1p(-exp(logZlow - logZhigh))
 end
 
+""" Return the pair `(samples, lnlikes)` resulting from a posterior
+sampling of the given nested state."""
 function postsample(n::NestState)
     nd = ndim(n)
     nl = nlive(n)
@@ -163,6 +205,14 @@ function postsample(n::NestState)
     post, logls
 end
 
+"""
+    run!(nstate, dZStop, verbose=true)
+
+Run `retire!` on the live points in `nstate` until the uncertainty in
+the evidence calculation is smaller than `dZStop`.
+
+`verbose` is as in `retire!`.
+"""
 function run!(n::NestState, dZStop)
     run!(n, dZStop, true)
 end
@@ -190,6 +240,14 @@ function dic(lls::Array{Float64, 1})
     -2.0*(mean(lls) - var(lls))
 end
 
+"""
+    dic(nstate)
+
+Return the DIC for the given nested state.
+
+The DIC is defined as ``\mathrm{DIC} \equiv -2\left( \langle \log L
+\rangle - \var \log L \right)``.
+"""
 function dic(ns::NestState)
     _, lls = postsample(ns)
 
