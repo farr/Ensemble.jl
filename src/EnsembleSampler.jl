@@ -4,6 +4,12 @@ using ..Acor
 
 ## Store ensembles as (ndim, nwalkers) arrays.
 
+"""
+    propose(ps, qs)
+
+Return the proposed stretch-move updates to the points `ps` treating
+the `qs` as fixed.
+"""
 function propose(ps::Array{Float64, 2}, qs::Array{Float64, 2})
     n = size(ps, 2)
 
@@ -17,11 +23,24 @@ function propose(ps::Array{Float64, 2}, qs::Array{Float64, 2})
     ps_out, zs
 end
 
+"""
+    lnprobs(xs, lnprobfn)
+
+Return an array of log-probabilities of the points `xs` under the
+log-probability function `lnprobfn`.
+"""
 function lnprobs(xs::Array{Float64, 2}, lnprobfn)
     xseq = Any[xs[:,i] for i=1:size(xs,2)]
     Array{Float64,1}(pmap(lnprobfn, xseq))
 end
 
+"""
+    update_half(ensemble, lnprobs, lnprobfn, half)
+
+Return the updated `(ensemble, lnprobs)` from updating either the odd
+(`half % 2 == 0`) or even (`half % 2 == 0`) indices of the `(ndim,
+nwalkers)` array of ensemble.
+"""
 function update_half(ensemble::Array{Float64, 2}, lnprob::Array{Float64, 1}, lnprobfn, half)
     n = size(ensemble, 2)
     nd = size(ensemble, 1)
@@ -78,11 +97,26 @@ function update_half(ensemble::Array{Float64, 2}, lnprob::Array{Float64, 1}, lnp
     out, lnpout
 end
 
+"""
+   update(ensemble, lnprob, lnprobfn)
+
+Return the updated `(ensemble, lnprob)` from a MCMC step.
+"""
+
 function update(ensemble::Array{Float64, 2}, lnprob::Array{Float64,1}, lnprobfn)
     e, lp = update_half(ensemble, lnprob, lnprobfn, 0)
     update_half(e, lp, lnprobfn, 1)
 end
 
+"""
+    run_mcmc(ensemble, lnprob, lnprobfn, steps; thin=1)
+
+Return the pair `(chain, chainlnprob)` representing `steps` of MCMC
+updates (thinned by `thin`).
+
+`chain` will have shape `(ndim, nwalkers, nsave)` where `nsave =
+div(steps, thin)`.  `chainlnprob` will have shape `(nwalkers, nsave)`.
+"""
 function run_mcmc(ensemble, lnprob, lnprobfn, steps; thin=1)
     nsave = div(steps, thin)
 
@@ -100,9 +134,39 @@ function run_mcmc(ensemble, lnprob, lnprobfn, steps; thin=1)
     chain, chainlnprob
 end
 
+"""
+    basic_callback(ensemble, lnprob, n, thin)
+
+Print basic summary of the `run_to_neff` step just completed as a
+callback.  
+
+Callbacks to `run_to_neff` will be passed the ensemble, the
+corresponding lnprobs, the number of MCMC steps taken and the thin
+parameter.
+
+"""
 function basic_callback(pts, lnprobs, n, thin)
     println("Advanced for $(n) steps (thin = $(thin)); (max, mean, var)(log(pi)) = $(maximum(lnprobs)), $(mean(lnprobs)), $(var(lnprobs))")
 end
+
+"""
+    run_to_neff(ensemble, lnprob, lnprobfn, neff; callback=nothing)
+
+Return `(chain, chainlnprobs)` that results from running the MCMC
+until accumulating at least `neff` independent ensembles worth of
+samples.
+
+Runs the MCMC in successively-doubled number of steps (with
+corresponding thinning) until the desired number of effective
+ensembles worth of samples are accumulated.  Resets the positions of
+the walkers and the doubling steps every time the highest posterior
+value increases by a significant amount (based on the dimension of the
+sampling problem).
+
+`chain` will have shape `(ndim, nwalkers, nensembles)` and
+`chainlnprobs` will have shape `(nwalkers, nensembles)`.
+
+"""
 
 function run_to_neff(ensemble, lnprob, lnprobfn, neff; callback=nothing)
     n = 8*neff
