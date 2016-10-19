@@ -1,5 +1,21 @@
+"""
+    Optimize
+
+Basic Powell's method optimizer.
+
+"""
 module Optimize
 
+"""
+    minbracket(f, a, b, c, epsabs, epsrel, epsdx)
+
+Find a minimum of `f(x)` for `a <= x <= c`.  Uses basic bracketing.  
+
+On entry, `f(b) < f(a)` and `f(b) < f(c)`.  Termination when either
+`c-a <= epsdx` or the range of `f` on `a`, `b`, `c` satisfies `range
+<= epsabs + epsrel*abs(f(b))`.
+
+"""
 function minbracket(f, a, b, c, epsabs, epsrel, epsdx)
     minbracket(f, a, f(x), b, f(b), c, f(c), epsabs, epsrel, epsdx)
 end
@@ -63,6 +79,16 @@ function find_bounds(f, fx0)
     x0, f0, x1, f1, x2, f2
 end
 
+"""
+    minpowell(f, x0, epsabs, epsrel, epsdx)
+
+Returns the `x` that minimises `f` starting from `x0` using Powell's
+method.
+
+Termination when change in `f` on iteration is `df <= epsabs +
+epsrel*abs(f)` or when the change in `x` satisfies `norm(dx) <=
+epsdx`.
+"""
 function minpowell(f, x0, epsabs, epsrel, epsdx)
     minpowell(f, x0, eye(size(x0,1)), epsabs, epsrel, epsdx)
 end
