@@ -2,10 +2,14 @@ module Stats
 
 export logsumexp
 
-@doc doc"""Compute `log(exp(x) + exp(y))` but accurately, and without
-risk of overflow.
+"""
+    logsumexp(x,y)
+    logsumexp(x)
 
-""" ->
+Return `log(exp(x) + exp(y))` but stably without overflow.  
+
+Single-argument version returns `log(exp(x[1]) + exp(x[2]) + ...)`.
+"""
 function logsumexp(x, y)
     if x == -Inf
         y
