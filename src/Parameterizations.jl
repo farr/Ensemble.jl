@@ -1,5 +1,30 @@
+"""
+    Parameterizations
+
+Useful parameterizations that map various constrained parameters to
+the real line or ``R^n``.  The naming convention follows:
+
+```julia
+p = XXX_param(x, args...)
+x = XXX_value(p, args...)
+log_jacobian = XXX_logjac(x, p, args...)
+```
+
+where `log_jacobian` gives ``\log \left| \frac{\mathrm{d}
+x}{\mathrm{d} p} \right|``, which is the approprate factor to multiply
+a density in `x` to produce a density in `p`.  In other words,
+`log_jacobian` is the factor that should be introduced into the prior
+to properly account for the reparameterization.
+
+Scalar parameterizations also have vector-based versions.
+"""
 module Parameterizations
 
+"""
+    bounded_param(x, low, high)
+
+Variables that are bounded between `low` and `high`.  
+"""
 bounded_param(x, low, high) = log(x-low) - log(high-x)
 
 function bounded_value(p, low, high)
@@ -23,6 +48,11 @@ function bounded_logjac(x::Vector, p::Vector, low, high)
     lj
 end
 
+"""
+    increasing_params(x)
+
+Variables that are constrained to be increasing: `x[1] < x[2] < ...`.
+"""
 function increasing_params(x)
     n = length(x)
     for i in 2:n
@@ -61,6 +91,12 @@ function increasing_logjac(x, p)
     lj
 end
 
+"""
+    simplex_params(x)
+
+Variables that are constrained to be positive and sum to 1.  The
+resulting parameterization is reduced in dimension by 1.
+"""
 function simplex_params(x)
     @assert(abs(sum(x) - 1) < 1e-8, "values must sum to one")
 
@@ -103,6 +139,12 @@ function simplex_logjac(x, p)
     lj
 end
 
+"""
+    unit_disk_param(z)
+
+Two-dimensional variable `z` that is constrained to live in the unit
+disk: ``|z| < 1``.
+"""
 function unit_disk_param(z)
     x = z[1]
     y = z[2]
