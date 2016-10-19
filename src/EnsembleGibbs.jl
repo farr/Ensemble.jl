@@ -1,5 +1,21 @@
+"""
+    EnsembleGibbs
+
+A module mixing the ensemble walker stretch move on a subset of
+parameter space with a Gibbs sampler on the complimentary subset.  Can
+be useful for foward modelling in the presence of selection effects:
+the stretch move adjusts model parameters given observed data and a
+draw from the latent (un-observed) data, then the Gibbs step draws new
+latent data."""
+
 module EnsembleGibbs
 
+"""
+    propose(ps, qs)
+
+Return `(ps_new, zs)`, the proposed updates to `ps` and the associated
+one-dimensional parameters, `zs`.
+"""
 function propose(ps::Array{Float64, 2}, qs::Array{Float64, 2})
     n = size(ps,2)
     nd = size(ps,1)
@@ -17,16 +33,36 @@ function propose(ps::Array{Float64, 2}, qs::Array{Float64, 2})
     return ps_new, zs
 end
 
+"""
+    lnprobs(ps, gs, lnprobfn)
+
+Return an array of log-probabilities given parameters `ps` and
+corresponding Gibbs samples `gs`.
+
+The log-probability function, `lnprobfn`, should accept these
+arguments as `lnprobfn(p, g)`.
+"""
 function lnprobs(ps, gs, lnprobfn)
     ps_any = Any[ps[:,i] for i in 1:size(ps,2)]
     Array{Float64, 1}(pmap(lnprobfn, ps_any, gs))
 end
 
+"""
+    gibbses(ps, gs, gupdate)
+
+Return new Gibbs samples to replace `gs` using `gupdate(p, g)`.
+"""
 function gibbses(ps, gs, gupdate)
     ps_any = Any[ps[:,i] for i in 1:size(ps,2)]
     Array{Any, 1}(pmap(gupdate, ps_any, gs))
 end
 
+"""
+    update_half(ps, gs, lnps, qs, lnprobfn)
+
+Return `(ps_new, gs, lnps_new)` from an MCMC step for half the system,
+treating `qs` as fixed.
+"""
 function update_half(ps, gs, lnps, qs, lnprobfn)
     nd = size(ps, 1)
     n = size(ps, 2)
@@ -51,6 +87,12 @@ function update_half(ps, gs, lnps, qs, lnprobfn)
     ps_out, gs, lnps_out
 end
 
+"""
+    update(ensemble, gibbs, lnprobs, lnprobfn, gibbsupdate)
+
+Return `(new_ensemble, new_gibbs, new_lnprobs)` from a complete MCMC
+then Gibbs cycle.
+"""
 function update(ensemble, gibbs, lnprob, lnprobfn, gibbsupdate)
     @assert(size(ensemble, 2) % 2 == 0)
 
@@ -81,6 +123,12 @@ function update(ensemble, gibbs, lnprob, lnprobfn, gibbsupdate)
     ensemble, gibbs, lnprob
 end
 
+"""
+    run_mcmc(ensemble, gibbs, lnprobs, lnprobfn, gibbsupdate, steps; thin=1)
+
+Run `steps` worth of `update` and return an array of the result,
+optionally thinned.
+"""
 function run_mcmc(ensemble, gibbs, lnprobs, lnprobfn, gibbsupdate, steps; thin=1)
     nsave = div(steps, thin)
 
