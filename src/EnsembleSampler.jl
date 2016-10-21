@@ -34,7 +34,7 @@ function lnprobs(xs::Array{Float64, 2}, lnprobfn)
         xseq = Any[xs[:,i] for i=1:size(xs,2)]
         Array{Float64,1}(pmap(lnprobfn, xseq))
     else
-        Array{Float64,1}[lnprobfn(x[:,i]) for i in 1:size(xs, 2)]
+        Float64[lnprobfn(xs[:,i]) for i in 1:size(xs, 2)]
     end
 end
 
