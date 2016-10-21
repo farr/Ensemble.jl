@@ -30,8 +30,12 @@ Return an array of log-probabilities of the points `xs` under the
 log-probability function `lnprobfn`.
 """
 function lnprobs(xs::Array{Float64, 2}, lnprobfn)
-    xseq = Any[xs[:,i] for i=1:size(xs,2)]
-    Array{Float64,1}(pmap(lnprobfn, xseq))
+    if length(workers()) > 1
+        xseq = Any[xs[:,i] for i=1:size(xs,2)]
+        Array{Float64,1}(pmap(lnprobfn, xseq))
+    else
+        Array{Float64,1}[lnprobfn(x[:,i]) for i in 1:size(xs, 2)]
+    end
 end
 
 """
