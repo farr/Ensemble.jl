@@ -106,7 +106,6 @@ end
 
 Return the updated `(ensemble, lnprob)` from a MCMC step.
 """
-
 function update(ensemble::Array{Float64, 2}, lnprob::Array{Float64,1}, lnprobfn)
     e, lp = update_half(ensemble, lnprob, lnprobfn, 0)
     update_half(e, lp, lnprobfn, 1)
