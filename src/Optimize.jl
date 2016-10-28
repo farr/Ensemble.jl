@@ -81,6 +81,7 @@ end
 
 """
     minpowell(f, x0, epsabs, epsrel, epsdx)
+    minpowell(f, x0, direc, epsabs, epsrel, epsdx)
 
 Returns the `x` that minimises `f` starting from `x0` using Powell's
 method.
@@ -88,6 +89,9 @@ method.
 Termination when change in `f` on iteration is `df <= epsabs +
 epsrel*abs(f)` or when the change in `x` satisfies `norm(dx) <=
 epsdx`.
+
+The optional `direc` argument gives the initial direction set.
+`direc[:,i]` is the `i`th direction for the optimization.
 """
 function minpowell(f, x0, epsabs, epsrel, epsdx)
     minpowell(f, x0, eye(size(x0,1)), epsabs, epsrel, epsdx)
