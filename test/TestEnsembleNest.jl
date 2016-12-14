@@ -28,13 +28,13 @@ function test5DGaussian()
     xs = rand((nd, nl))
     ns = NestState(logl, logp, xs, nmcmc)
 
-    run!(ns, 1e-3)
+    run!(ns, 0.1)
 
     lZ, dlZ = logZ(ns)
     
-    @test_approx_eq_eps lZ 0.0 10*dlZ
+    @test_approx_eq_eps lZ 0.0 1.0
 
-    post = postsample(ns)
+    post, lnprobs = postsample(ns)
     npost = size(post, 2)
 
     ses = sigma / sqrt(npost)
