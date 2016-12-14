@@ -37,10 +37,9 @@ function test5DGaussian()
     post, lnprobs = postsample(ns)
     npost = size(post, 2)
 
-    ses = sigma / sqrt(npost)
     for i in 1:nd
         smu = mean(post[i,:])
-        @test_approx_eq_eps smu mu[i] 3*ses[i]
+        @test_approx_eq_eps smu mu[i] 0.1*sigma[i]
     end
 end
 
