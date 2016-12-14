@@ -1,6 +1,8 @@
 The Ensemble Julia Package
 ==========================
 
+[![Build Status](https://travis-ci.org/farr/Ensemble.jl.svg?branch=master)](https://travis-ci.org/farr/Ensemble.jl)
+
 The Ensemble package implements in Julia the ensemble MCMC sampler of
 [Goodman & Weare (2010)](https://goo.gl/EFNVCz), following in spirit
 the implementation in the [emcee](http://dan.iel.fm/emcee/current/)
