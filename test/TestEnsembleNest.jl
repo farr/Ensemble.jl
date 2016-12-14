@@ -30,7 +30,9 @@ function test5DGaussian()
 
     run!(ns, 1e-3)
 
-    @test_approx_eq_eps logZ(ns) 0.0 0.2
+    lZ, dlZ = logZ(ns)
+    
+    @test_approx_eq_eps lZ 0.0 10*dlZ
 
     post = postsample(ns)
     npost = size(post, 2)

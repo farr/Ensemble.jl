@@ -156,9 +156,8 @@ function retire!(n::NestState, verbose)
     n
 end
 
-"""
-Return the (natural) log of the evidence.
-"""
+""" Return the (natural) log of the evidence and an estimate of its
+uncertainty.  """
 function logZ(n::NestState)
     nl = nlive(n)
     
@@ -166,17 +165,14 @@ function logZ(n::NestState)
 
     logZdead = logsumexp(n.deadlogwts + n.deadlogls)
     logZlive = logsumexp(n.livelogls + loglivewt)
+    logZlive_big = maximum(n.livelogls) + n.logx
+    logZlive_small = minimum(n.livelogls) + n.logx
+    
+    logZ = logsumexp(logZdead, logZlive)
+    logZ_big = logsumexp(logZdead, logZlive_big)
+    logZ_small = logsumexp(logZdead, logZlive_small)
 
-    logsumexp(logZdead, logZlive)
-end
-
-""" Return an estimate of the (natural) log of the uncertainty in the
-evidence given the current sampling state.  """
-function logdZ(n::NestState)
-    logZlow = minimum(n.livelogls) + n.logx
-    logZhigh = maximum(n.livelogls) + n.logx
-
-    logZhigh + log1p(-exp(logZlow - logZhigh))
+    logZ, (logZ_big - logZ_small)
 end
 
 """ Return the pair `(samples, lnlikes)` resulting from a posterior
@@ -209,7 +205,7 @@ end
     run!(nstate, dZStop, verbose=true)
 
 Run `retire!` on the live points in `nstate` until the uncertainty in
-the evidence calculation is smaller than `dZStop`.
+the log evidence calculation is smaller than `dZStop`.
 
 `verbose` is as in `retire!`.
 """
@@ -223,14 +219,13 @@ function run!(n::NestState, dZStop, verbose)
             retire!(n, verbose)
         end
 
-        lZ = logZ(n)
-        ldZ = logdZ(n)
+        lZ, dlZ = logZ(n)
 
         if verbose
-            println(@sprintf("Now evolved for %d steps, dZ/Z = %.4f", ndead(n), exp(ldZ-lZ)))
+            println(@sprintf("Now evolved for %d steps, dlog(Z) = %.4f", ndead(n), dlZ))
         end
         
-        if ldZ - lZ < log(dZStop)
+        if dlZ < dZStop
             break
         end
     end
