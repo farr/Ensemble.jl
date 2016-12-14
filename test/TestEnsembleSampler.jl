@@ -62,7 +62,7 @@ function testgaussian()
     evals = eigvals(sigma)
     
     for i in 1:ndim
-        @test_approx_eq_eps chain_evals[i] evals[i] 0.25*evals[i]
+        @test_approx_eq_eps chain_evals[i] evals[i] 0.1*maximum(evals)
     end
 
     chain_evecs = eigvecs(chain_sigma)
