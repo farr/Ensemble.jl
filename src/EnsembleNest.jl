@@ -150,7 +150,7 @@ function retire!(n::NestState, verbose)
     n.nmcmc = round(Int,n.nmcmc_exact)
 
     if verbose
-        println("Retired point with ll = $(n.deadlogls[end]); accept = $(facc); next nmcmc = $(n.nmcmc)")
+        println(@sprintf("Retired point with ll = %.4f; accept = %.4f; next nmcmc = %d", n.deadlogls[end], facc, n.nmcmc))
     end
     
     n
@@ -227,7 +227,7 @@ function run!(n::NestState, dZStop, verbose)
         ldZ = logdZ(n)
 
         if verbose
-            println("Now evolved for $(ndead(n)) steps, dZ/Z = $(exp(ldZ-lZ))")
+            println(@sprintf("Now evolved for %d steps, dZ/Z = %.4f", ndead(n), exp(ldZ-lZ)))
         end
         
         if ldZ - lZ < log(dZStop)
