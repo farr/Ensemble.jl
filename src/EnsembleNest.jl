@@ -202,18 +202,17 @@ function postsample(n::NestState)
 end
 
 """
-    run!(nstate, dZStop, verbose=true)
+    run!(nstate, dZStop, verbose=true, ckpt_file=nothing)
 
 Run `retire!` on the live points in `nstate` until the uncertainty in
 the log evidence calculation is smaller than `dZStop`.
 
 `verbose` is as in `retire!`.
-"""
-function run!(n::NestState, dZStop)
-    run!(n, dZStop, true)
-end
 
-function run!(n::NestState, dZStop, verbose)
+`ckpt_file` is a filename in which to store intermediate, serialised
+states of the computation.  Deserialising one of these states and
+calling `run!` on it again will continue the computation"""
+function run!(n::NestState, dZStop; verbose=true, ckpt_file=nothing)
     while true
         for i in 1:nlive(n)
             retire!(n, verbose)
@@ -223,6 +222,12 @@ function run!(n::NestState, dZStop, verbose)
 
         if verbose
             println(@sprintf("Now evolved for %d steps, dlog(Z) = %.4f", ndead(n), dlZ))
+        end
+
+        if ckpt_file != nothing
+            tmpfile = "$(ckpt_file).temp"
+            open(f -> serialize(f, n), tmpfile, "w")
+            mv(tmpfile, ckpt_file, remove_destination=true)
         end
         
         if dlZ < dZStop
