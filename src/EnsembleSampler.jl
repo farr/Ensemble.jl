@@ -170,7 +170,6 @@ sampling problem).
 `chainlnprobs` will have shape `(nwalkers, nensembles)`.
 
 """
-
 function run_to_neff(ensemble, lnprob, lnprobfn, neff; callback=nothing)
     n = 8*neff
     n0 = n
