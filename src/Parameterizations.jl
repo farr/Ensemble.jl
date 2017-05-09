@@ -69,7 +69,7 @@ end
 function positive_logjac(x::Vector, p::Vector)
     lj = zero(x[1])
     for i in eachindex(x)
-        lj += positive_logjac(x, p)
+        lj += positive_logjac(x[i], p[i])
     end
     lj
 end
