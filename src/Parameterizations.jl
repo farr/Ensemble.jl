@@ -49,6 +49,32 @@ function bounded_logjac(x::Vector, p::Vector, low, high)
 end
 
 """
+    positive_param(x)
+
+Variable that is constrained to be positive.
+"""
+function positive_param(x)
+    log(x)
+end
+positive_param(x::Vector) = [positive_param(x[i]) for i in eachindex(x)]
+
+function positive_value(p)
+    exp(p)
+end
+positive_value(p::Vector) = [positive_value(p[i]) for i in eachindex(p)]
+
+function positive_logjac(x, p)
+    p
+end
+function positive_logjac(x::Vector, p::Vector)
+    lj = zero(x[1])
+    for i in eachindex(x)
+        lj += positive_logjac(x, p)
+    end
+    lj
+end
+
+"""
     increasing_params(x)
 
 Variables that are constrained to be increasing: `x[1] < x[2] < ...`.
