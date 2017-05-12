@@ -150,6 +150,7 @@ parameter.
 """
 function basic_callback(pts, lnprobs, n, thin)
     println("Advanced for $(n) steps (thin = $(thin)); (max, mean, var)(log(pi)) = $(maximum(lnprobs)), $(mean(lnprobs)), $(var(lnprobs))")
+    println("    ACLs are ", Acor.acl(pts)')
     flush(STDOUT)
 end
 
