@@ -118,6 +118,42 @@ function increasing_logjac(x, p)
 end
 
 """
+    increasing_positive_params(x)
+
+Variables that are both positive and increasing.
+
+"""
+function increasing_positive_params(x)
+    @assert all(x[2:end] .> x[1:end-1])
+
+    n = size(x, 1)
+    p = zeros(n)
+
+    p[1] = log(x[1])
+    for i in 2:n
+        p[i] = log(x[i]-x[i-1])
+    end
+
+    p
+end
+
+function increasing_positive_values(p)
+    n = size(p, 1)
+    x = zeros(n)
+
+    x[1] = exp(p[1])
+    for i in 2:n
+        x[i] = x[i-1] + exp(p[i])
+    end
+
+    x
+end
+
+function increasing_positive_logjac(x, p)
+    sum(p)
+end
+
+"""
     simplex_params(x)
 
 Variables that are constrained to be positive and sum to 1.  The
