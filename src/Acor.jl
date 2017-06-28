@@ -17,7 +17,7 @@ function acf(xs::Array{Float64, 1})
     end
 
     ys_tilde = rfft(ys)
-    ac = irfft(abs2(ys_tilde), N)
+    ac = irfft(abs2.(ys_tilde), N)
 
     ac[1:n]/ac[1]
 end
