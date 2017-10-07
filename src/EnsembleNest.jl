@@ -3,6 +3,11 @@ module EnsembleNest
 using ..EnsembleSampler
 using ..Stats
 
+using HDF5
+
+import Base:
+    write
+
 export NestState, ndim, nlive, ndead, retire!, logZ, logdZ, postsample, run!
 
 """
@@ -48,6 +53,32 @@ function NestState(logl, logp, pts::Array{Float64, 2}, nmcmc)
     end
 
     NestState(logl, logp, nmcmc, nmcmc, copy(pts), livelogps, livelogls, zeros((ndim,0)), zeros(0), zeros(0), 0.0, -Inf)
+end
+
+"""Reading and writing NestState objects from HDF5"""
+function NestState(f::HDF5File; logl=nothing, logp=nothing, group=nothing)
+    if group == nothing
+        g = f
+    else
+        g = f[group]
+    end
+    NestState(logl, logp, read(g, "nmcmc"), read(g, "nmcmc_exact"),
+              read(g, "livepts"), read(g, "livelogps"), read(g, "livelogls"),
+              read(g, "deadpts"), read(g, "deadlogls"), read(g, "deadlogwts"),
+              read(g, "logx"), read(g, "loglthresh"))
+end
+
+function write(f::Union{HDF5File, HDF5Group}, ns::NestState)
+    f["nmcmc"] = ns.nmcmc
+    f["nmcmc_exact"] = ns.nmcmc_exact
+    f["livepts", "compress", 3, "shuffle", ()] = ns.livepts
+    f["livelogps", "compress", 3, "shuffle", ()] = ns.livelogps
+    f["livelogls", "compress", 3, "shuffle", ()] = ns.livelogls
+    f["deadpts", "compress", 3, "shuffle", ()] = ns.deadpts
+    f["deadlogls", "compress", 3, "shuffle", ()] = ns.deadlogls
+    f["deadlogwts", "compress", 3, "shuffle", ()] = ns.deadlogwts
+    f["logx"] = ns.logx
+    f["loglthresh"] = ns.loglthresh
 end
 
 """Return the dimension of the problem in `n`."""
