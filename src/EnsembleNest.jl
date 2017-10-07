@@ -257,7 +257,7 @@ function run!(n::NestState, dZStop; verbose=true, ckpt_file=nothing)
 
         if ckpt_file != nothing
             tmpfile = "$(ckpt_file).temp"
-            open(f -> serialize(f, n), tmpfile, "w")
+            h5open(f -> write(f, n), tmpfile, "w")
             mv(tmpfile, ckpt_file, remove_destination=true)
         end
         
