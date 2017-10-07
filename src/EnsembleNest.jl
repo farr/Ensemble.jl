@@ -56,16 +56,11 @@ function NestState(logl, logp, pts::Array{Float64, 2}, nmcmc)
 end
 
 """Reading and writing NestState objects from HDF5"""
-function NestState(f::HDF5File; logl=nothing, logp=nothing, group=nothing)
-    if group == nothing
-        g = f
-    else
-        g = f[group]
-    end
-    NestState(logl, logp, read(g, "nmcmc"), read(g, "nmcmc_exact"),
-              read(g, "livepts"), read(g, "livelogps"), read(g, "livelogls"),
-              read(g, "deadpts"), read(g, "deadlogls"), read(g, "deadlogwts"),
-              read(g, "logx"), read(g, "loglthresh"))
+function NestState(f::Union{HDF5File,HDF5Group}; logl=nothing, logp=nothing)
+    NestState(logl, logp, read(f, "nmcmc"), read(f, "nmcmc_exact"),
+              read(f, "livepts"), read(f, "livelogps"), read(f, "livelogls"),
+              read(f, "deadpts"), read(f, "deadlogls"), read(f, "deadlogwts"),
+              read(f, "logx"), read(f, "loglthresh"))
 end
 
 function write(f::Union{HDF5File, HDF5Group}, ns::NestState)
