@@ -149,8 +149,9 @@ parameter.
 
 """
 function basic_callback(pts, lnprobs, n, thin)
-    println("Advanced for $(n) steps (thin = $(thin)); (max, mean, var)(log(pi)) = $(maximum(lnprobs)), $(mean(lnprobs)), $(var(lnprobs))")
-    println("    ACLs are ", Acor.acl(pts)')
+    println(@sprintf("Advanced for %d steps (thin = %d); (max, mean, var)(log(pi)) = (%.1f, %.1f, %.1f)", n, thin, maximum(lnprobs), mean(lnprobs), var(lnprobs)))
+    
+    println("    ACLs are [" * join([@sprintf("%.1f", ac) for ac in Acor.acl(pts)], ",") * "]")
     flush(STDOUT)
 end
 
