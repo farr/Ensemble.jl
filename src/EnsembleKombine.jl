@@ -32,6 +32,12 @@ function rescale(pts)
     F[:L] \ repts
 end
 
+"""
+    update_means(pts, mus, assigns)
+
+Part of the K-means iteration, returns updated means representing the
+centroid of each cluster.
+"""
 function update_means(pts, mus, assigns)
     ncluster = maximum(assigns)
 
@@ -44,6 +50,12 @@ function update_means(pts, mus, assigns)
     new_mus
 end
 
+"""
+    update_assigns(pts, mus, assigns)
+
+Part of the K-means iteration, returns updated cluster assignments
+based on the nearst mean position to each point.
+"""
 function update_assigns(pts, mus, assigns)
     nd, np = size(pts)
 
@@ -67,6 +79,14 @@ function update_assigns(pts, mus, assigns)
     new_assigns
 end
 
+"""
+    kmeans_init(pts, n)
+
+Returns ``mus, assigns`` to initialise the k-means iteration, using
+the locations of randomly chosen points for the ``n`` cluster centres.
+
+The argument ``pts`` should have shape ``(ndim, npts)``.
+"""
 function kmeans_init(pts, n)
     nd, np = size(pts)
 
@@ -81,6 +101,14 @@ function kmeans_init(pts, n)
     mus, update_assigns(pts, mus, assigns)
 end
 
+"""
+    kmeans(pts, n, [maxiter=10000])
+
+Returns ``(mus, assigns)`` after iterating the two K-means update
+steps to convergence.  Because the initial assignment of cluster
+centres is random, running the code again may lead to a different
+solution.
+"""
 function kmeans(pts, n, maxiter=10000)
     mus, assigns = kmeans_init(pts, n)
 
@@ -106,12 +134,34 @@ function kmeans(pts, n, maxiter=10000)
     new_mus, new_assigns
 end
 
+"""
+    ClusteredKDE(pts, n)
+
+Returns an object representing the a clustered KDE with ``n``
+clusters.  The ``pts`` argument should have shape ``(ndim, npts)``.
+Methods defined on this object include
+
+* ``npts(ck)``, ``ndim(ck)``, and ``ncl(ck)`` giving the number of
+  points, dimensions, and clusters of the object.
+
+* ``logpdf(ck, x)`` which returns the log of the KDE probability
+  density at the point ``x``.
+
+* ``rand(ck[, dims...])`` which returns a random draw from the KDE PDF
+  (or an array of such draws).
+"""
 type ClusteredKDE
     pts::Array{Float64, 2}
     assigns::Array{Int, 1}
     cholfacts::Array{LinAlg.Cholesky{Float64,Array{Float64,2}}, 1}
 end
 
+"""
+    ClusteredKDE(pts, n)
+
+Construct a ``ClusteredKDE`` object with ``n`` clusters from the given
+``pts``.
+"""
 function ClusteredKDE(pts, n)
     nd, np = size(pts)
     
@@ -133,18 +183,26 @@ function ClusteredKDE(pts, n)
     ClusteredKDE(copy(pts), assigns, cfacts)
 end
 
+"""The number of dimensions in the KDE's points."""
 function ndim(ck::ClusteredKDE)
     size(ck.pts, 1)
 end
 
+"""The number of points used to construct the KDE."""
 function npts(ck::ClusteredKDE)
     size(ck.pts, 2)
 end
 
+"""The number of clusters in the KDE."""
 function ncl(ck::ClusteredKDE)
     size(ck.cholfacts, 1)
 end
 
+"""
+    rand(ck::ClusteredKDE, [dims...])
+
+Return a random point or array of such points from the clustered KDE.
+"""
 function rand(ck::ClusteredKDE)
     j = rand(1:npts(ck))
     p = ck.pts[:, j]
@@ -164,6 +222,12 @@ function rand(ck::ClusteredKDE, dims...)
     pts
 end
 
+"""
+    logpdf(ck::ClusteredKDE, x)
+
+Return the log of the PDF defined by the clustered KDE at the point
+``x``.
+"""
 function logpdf(ck, x)
     logdets = [sum(log(diag(ck.cholfacts[i][:L]))) for i in 1:ncl(ck)]
 
@@ -183,6 +247,12 @@ function logpdf(ck, x)
     lpdf - log(npts(ck))
 end
 
+"""
+    build_proposal_kde(pts, [ncmax])
+
+Produces a KDE with at most ``ncmax`` clusters that is optimised to
+represent the distribution of ``pts``.
+"""
 function build_proposal_kde(pts, ncmax=nothing)
     # We need to have at least ndim+1 points in each cluster, so that
     # limits how many clusters we can have.  IF all points divided
@@ -226,6 +296,27 @@ function build_proposal_kde(pts, ncmax=nothing)
     bestck
 end
 
+"""
+    mcmc_step(pts, lnprobs, lnprops, logpost, proposal)
+
+Returns ``(new_pts, new_lnprobs, new_lnprops)`` for a single MCMC step
+using the clustered KDE ``proposal`` as a Metropoli-Hastings proposal.
+
+# Arguments
+
+- ``pts`` of shape ``(ndim, npts)`` is the current state of the MCMC
+  chain.
+
+- ``lnprobs`` is the log-probability at the current points.
+
+- ``lnprops`` is the log of the proposal density at the current
+  points.
+
+- ``logpost`` is the function that computes the log-probability for
+  the MCMC.
+
+- ``proposal::ClusteredKDE`` is the clustered KDE proposal.
+"""
 function mcmc_step(pts, lnprobs, lnprop, logpost, proposal)
     new_pts = rand(proposal, size(pts, 2))
 
@@ -254,6 +345,13 @@ function mcmc_step(pts, lnprobs, lnprop, logpost, proposal)
     (out_pts, out_lnprobs, out_lnprop)
 end
 
+"""
+    run_mcmc(pts, lnprobs, lnprops, logpost, proposal, steps; [thin=1])
+
+Repeatedly calls ``mcmc_step`` (see arguments above) ``steps`` times,
+saving every ``thin`` iterations into a chain, and returning ``(chain,
+chain_lnprobs, chain_lnprops)``.
+"""
 function run_mcmc(pts, lnprobs, lnprop, logpost, proposal, steps; thin=1)
     nsave = div(steps, thin)
 
