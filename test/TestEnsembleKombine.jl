@@ -21,8 +21,8 @@ function testgaussian()
 
     prop = EnsembleKombine.build_proposal_kde(pts)
 
-    lnprobs = [lnprob(pts[:,j,1]) for j in 1:size(pts,2)]
-    lnprops = [logpdf(prop, pts[:,j]) for j in 1:size(pts,2)]
+    lnprobs = [logpost(pts[:,j,1]) for j in 1:size(pts,2)]
+    lnprops = [EnsembleKombine.logpdf(prop, pts[:,j]) for j in 1:size(pts,2)]
 
     # Burnin
     for j in 1:10
