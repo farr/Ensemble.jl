@@ -2,13 +2,13 @@ module TestEnsembleSampler
 
 using Ensemble
 
-using Base.Test: @test_approx_eq_eps
+using Base.Test: @test_approx_eq_eps, @testset
 
 function testgaussian()
     ndim = 10
 
     mu = randn(ndim)
-    
+
     sigma = randn(ndim, ndim)
     sigma = sigma*transpose(sigma)
 
@@ -54,22 +54,24 @@ function testgaussian()
     end
     chain_sigma /= 100*100 - 1
 
-    for i in 1:ndim
-        @test_approx_eq_eps chain_mean[i] mu[i] 0.1*sigma[i,i]
-    end
+    @testset "Gaussian distribution tests" begin
+        for i in 1:ndim
+            @test_approx_eq_eps chain_mean[i] mu[i] 0.1*sigma[i,i]
+        end
 
-    chain_evals = eigvals(chain_sigma)
-    evals = eigvals(sigma)
-    
-    for i in 1:ndim
-        @test_approx_eq_eps chain_evals[i] evals[i] 0.1*maximum(evals)
-    end
+        chain_evals = eigvals(chain_sigma)
+        evals = eigvals(sigma)
 
-    chain_evecs = eigvecs(chain_sigma)
-    evecs = eigvecs(sigma)
+        for i in 1:ndim
+            @test_approx_eq_eps chain_evals[i] evals[i] 0.1*maximum(evals)
+        end
 
-    for i in 1:ndim
-        @test_approx_eq_eps abs(dot(chain_evecs[:,i], evecs[:,i])) 1.0 0.1
+        chain_evecs = eigvecs(chain_sigma)
+        evecs = eigvecs(sigma)
+
+        for i in 1:ndim
+            @test_approx_eq_eps abs(dot(chain_evecs[:,i], evecs[:,i])) 1.0 0.1
+        end
     end
 end
 
@@ -103,7 +105,7 @@ function make_sinusoidlnprob(ts::Array{Float64, 1}, data::Array{Float64, 1})
         lna::Float64 = x[1]
         lnP::Float64 = x[2]
         logitphi::Float64 = x[3]
-        
+
         n = size(ts,1)
 
         phi = invlogit(logitphi, 0.0, 2*pi)
@@ -128,10 +130,10 @@ end
 
 function testsinusoid()
     snr = 5.0
-    
+
     n = 100
     sigma = 1.0
-    
+
     a = 2.0*sigma*snr/sqrt(n)
     P = 1.0
 
@@ -165,14 +167,18 @@ function testsinusoid()
     Ps = exp(chain[2,:,:])
     phis = [invlogit(c, 0, 2*pi) for c in chain[3,:,:]]
 
-    @test_approx_eq_eps mean(as) a 3*std(as)
-    @test_approx_eq_eps mean(Ps) P 3*std(Ps)
-    @test_approx_eq_eps mean(phis) phi0 3*std(phis)
+    @testset "sinusoidal probability tests" begin
+        @test_approx_eq_eps mean(as) a 3*std(as)
+        @test_approx_eq_eps mean(Ps) P 3*std(Ps)
+        @test_approx_eq_eps mean(phis) phi0 3*std(phis)
+    end
 end
 
 function testall()
-    testgaussian()
-    testsinusoid()
+    @testset "EnsembleSampler tests" begin
+        testgaussian()
+        testsinusoid()
+    end
 end
 
 end

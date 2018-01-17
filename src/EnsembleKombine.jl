@@ -12,7 +12,7 @@ Transform ``pts`` (of size ``(ndim, npts)``) into zero-mean, unit covaraince.
 """
 function rescale(pts)
     nd, np = size(pts)
-    
+
     mu = vec(mean(pts, 2))
     cv = cov(pts, 2)
 
@@ -164,7 +164,7 @@ Construct a ``ClusteredKDE`` object with ``n`` clusters from the given
 """
 function ClusteredKDE(pts, n)
     nd, np = size(pts)
-    
+
     _, assigns = kmeans(pts, n)
 
     cfacts = LinAlg.Cholesky{Float64,Array{Float64,2}}[]
@@ -173,9 +173,9 @@ function ClusteredKDE(pts, n)
         ps = pts[:,sel]
 
         @assert size(ps,2)>n "one cluster has too few points"
-        
+
         cv = cov(ps, 2)
-        cv *= (1.0/np).^(2.0/(4.0 + nd)) # Scott's rule
+        cv *= (1.0/size(ps, 2)).^(2.0/(4.0 + nd)) # Scott's rule
 
         push!(cfacts, cholfact(cv))
     end
@@ -284,11 +284,11 @@ function build_proposal_kde(pts, ncmax=nothing)
                     bestck = ck
                 end
             catch x
-                if isa(x, AssertionError)
+                if isa(x, AssertionError) || isa(x, LinAlg.PosDefException)
                     # Do nothing
                 else
                     rethrow()
-                end                
+                end
             end
         end
     end

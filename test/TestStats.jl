@@ -1,6 +1,6 @@
 module TestStats
 
-using Base.Test: @test_approx_eq_eps, @test
+using Base.Test: @test_approx_eq_eps, @test, @testset
 using Ensemble
 using Ensemble.Stats: logsumexp
 

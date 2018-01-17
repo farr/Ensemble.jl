@@ -1,6 +1,6 @@
 module TestEnsembleGibbs
 
-using Base.Test: @test
+using Base.Test: @test, @testset
 using Distributions
 using Ensemble
 using Ensemble.Stats: logsumexp
@@ -100,9 +100,11 @@ function testall()
         pts[:,:,i] = ps
     end
 
-    @test((mean(pts[1,:,:] - ptrue[1])/std(pts[1,:,:]) < 3))
-    @test((mean(pts[2,:,:] - ptrue[2])/std(pts[2,:,:]) < 3))
-    @test((mean(pts[3,:,:] - ptrue[3])/std(pts[3,:,:]) < 3))          
+    @testset "EnsembleGibbs tests" begin
+        @test((mean(pts[1,:,:] - ptrue[1])/std(pts[1,:,:]) < 3))
+        @test((mean(pts[2,:,:] - ptrue[2])/std(pts[2,:,:]) < 3))
+        @test((mean(pts[3,:,:] - ptrue[3])/std(pts[3,:,:]) < 3))
+    end
 end
 
 end
