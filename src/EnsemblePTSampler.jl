@@ -18,12 +18,12 @@ on the given ensemble.
 function mcmc_step(pts, lnlikes, lnpriors, loglike, logprior, betas)
     nd, nw, nt = size(pts)
 
-    new_pts = zeros(size(pts)...)
-    new_lnlikes = zeros(size(lnlikes)...)
-    new_lnpriors = zeros(size(lnpriors)...)
+    new_pts = SharedArray{Float64}(size(pts))
+    new_lnlikes = SharedArray{Float64}(size(lnlikes))
+    new_lnpriors = SharedArray{Float64}(size(lnpriors))
 
-    for k in 1:nt
-        for j in 1:nw
+    @sync @parallel for j in 1:nw
+        for k in 1:nt
             p = pts[:,j,k]
 
             jj = j
@@ -59,7 +59,7 @@ function mcmc_step(pts, lnlikes, lnpriors, loglike, logprior, betas)
         end
     end
 
-    (new_pts, new_lnlikes, new_lnpriors)
+    (sdata(new_pts), sdata(new_lnlikes), sdata(new_lnpriors))
 end
 
 """
