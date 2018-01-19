@@ -35,7 +35,7 @@ function lnlikes_lnpriors(ps, ll, lp)
                 push!(parr, ps[:,i,j])
             end
         end
-        lls_lps = pmap(x -> lnlike_lnprior(x, ll, lp), parr)
+        lls_lps = pmap(x -> lnlike_lnprior(x, ll, lp), parr, batch_size=div(nw*nt,(4*length(workers()))))
         lls = reshape(Float64[l for (l,p) in lls_lps], (nw, nt))
         lps = reshape(Float64[p for (l,p) in lls_lps], (nw, nt))
         (lls, lps)

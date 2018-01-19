@@ -32,7 +32,7 @@ log-probability function `lnprobfn`.
 function lnprobs(xs::Array{Float64, 2}, lnprobfn)
     if length(workers()) > 1
         xseq = Any[xs[:,i] for i=1:size(xs,2)]
-        Array{Float64,1}(pmap(lnprobfn, xseq))
+        Array{Float64,1}(pmap(lnprobfn, xseq, batch_size=div(size(xs,2),(4*length(workers())))))
     else
         Float64[lnprobfn(xs[:,i]) for i in 1:size(xs, 2)]
     end
@@ -141,7 +141,7 @@ end
     basic_callback(ensemble, lnprob, n, thin)
 
 Print basic summary of the `run_to_neff` step just completed as a
-callback.  
+callback.
 
 Callbacks to `run_to_neff` will be passed the ensemble, the
 corresponding lnprobs, the number of MCMC steps taken and the thin
@@ -181,7 +181,7 @@ function run_to_neff(ensemble, lnprob, lnprobfn, neff; callback=nothing)
 
     ps = reshape(ensemble, (nd, nw, 1))
     lnps = reshape(lnprob, (nw, 1))
-    
+
     lnpmax = maximum(lnps)
 
     while true
@@ -190,7 +190,7 @@ function run_to_neff(ensemble, lnprob, lnprobfn, neff; callback=nothing)
         if !(callback == nothing)
             callback(ps, lnps, n, thin)
         end
-        
+
         acls = Acor.acl(ps)
         amax = maximum(acls)
         nee = size(ps, 3)/amax
@@ -206,7 +206,7 @@ function run_to_neff(ensemble, lnprob, lnprobfn, neff; callback=nothing)
             ne = size(ps, 3)
 
             # Count number of samples we have above mean - 3*sigma
-            lnpthresh = lpm - nd/2.0 - 3.0*sqrt(nd/2.0)  
+            lnpthresh = lpm - nd/2.0 - 3.0*sqrt(nd/2.0)
 
             pslnps_above = Set()
             for i in 1:nw
@@ -235,7 +235,7 @@ function run_to_neff(ensemble, lnprob, lnprobfn, neff; callback=nothing)
                     ps_above[:,i] = p
                     lnps_above[i] = lp
                 end
-            
+
                 new_ps = zeros(nd, nw, 1)
                 new_lnps = zeros(nw, 1)
 
@@ -250,11 +250,11 @@ function run_to_neff(ensemble, lnprob, lnprobfn, neff; callback=nothing)
                     new_ps[:,i,1] = p
                     new_lnps[i,1] = l
                 end
-                
+
                 ps = new_ps
                 lnps = new_lnps
             end
-        else            
+        else
             n *= 2
             thin *= 2
         end
