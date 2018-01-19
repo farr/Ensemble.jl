@@ -1,5 +1,89 @@
 module EnsemblePTSampler
 
+function propose(ps, qs)
+    nd, nw, nt = size(ps)
+
+    ps_out = zeros(nd, nw, nt)
+    zs = zeros(nw, nt)
+
+    for i in 1:nw
+        for j in 1:nt
+            zs[i,j] = exp(log(0.5) + (log(2.0)-log(0.5))*rand())
+            ii = rand(1:nw)
+            ps_out[:,i,j] = qs[:,ii,j] + zs[i,j]*(ps[:,i,j] - qs[:,ii,j])
+        end
+    end
+
+    ps_out, zs
+end
+
+function lnlike_lnprior(x, ll, lp)
+    p = lp(x)
+    if p == -Inf
+        (-Inf, -Inf)
+    else
+        (ll(x), p)
+    end
+end
+
+function lnlikes_lnpriors(ps, ll, lp)
+    nd, nw, nt = size(ps)
+    if length(workers()) > 1
+        parr = Array{Float64,1}[]
+        for j in 1:nt
+            for i in 1:nw
+                push!(parr, ps[:,i,j])
+            end
+        end
+        lls_lps = pmap(x -> lnlike_lnprior(x, ll, lp), parr)
+        lls = reshape(Float64[l for (l,p) in lls_lps], (nw, nt))
+        lps = reshape(Float64[p for (l,p) in lls_lps], (nw, nt))
+        (lls, lps)
+    else
+        lls = zeros(nw, nt)
+        lps = zeros(nw, nt)
+        for i in 1:nw
+            for j in 1:nt
+                lps[i,j] = lp(ps[:,i,j])
+                if lps[i,j] == -Inf
+                    lls[i,j] = -Inf
+                else
+                    lls[i,j] = ll(ps[:,i,j])
+                end
+            end
+        end
+        (lls, lps)
+    end
+end
+
+function update_half(ps, llps, lpps, qs, ll, lp, betas)
+    nd, nw, nt = size(ps)
+
+    prop_ps, zs = propose(ps, qs)
+    prop_llps, prop_lpps = lnlikes_lnpriors(prop_ps, ll, lp)
+
+    new_ps = zeros(size(ps)...)
+    new_llps = zeros(size(llps)...)
+    new_lpps = zeros(size(lpps)...)
+
+    for i in 1:nw
+        for j in 1:nt
+            lpacc = betas[j]*(prop_llps[i,j] - llps[i,j]) + prop_lpps[i,j] - lpps[i,j] + nd*log(zs[i,j])
+            if log(rand()) < lpacc
+                new_ps[:,i,j] = prop_ps[:,i,j]
+                new_llps[i,j] = prop_llps[i,j]
+                new_lpps[i,j] = prop_lpps[i,j]
+            else
+                new_ps[:,i,j] = ps[:,i,j]
+                new_llps[i,j] = llps[i,j]
+                new_lpps[i,j] = lpps[i,j]
+            end
+        end
+    end
+
+    (new_ps, new_llps, new_lpps)
+end
+
 """
     mcmc_step(pts, lnlikes, lnpriors, loglike, logprior, betas)
 
@@ -18,48 +102,25 @@ on the given ensemble.
 function mcmc_step(pts, lnlikes, lnpriors, loglike, logprior, betas)
     nd, nw, nt = size(pts)
 
-    new_pts = SharedArray{Float64}(size(pts))
-    new_lnlikes = SharedArray{Float64}(size(lnlikes))
-    new_lnpriors = SharedArray{Float64}(size(lnpriors))
+    @assert nw%2==0 "must have even number of walkers"
 
-    @sync @parallel for j in 1:nw
-        for k in 1:nt
-            p = pts[:,j,k]
+    ihalf = div(nw, 2)
 
-            jj = j
-            while jj == j
-                jj = rand(1:nw)
-            end
+    ps = pts[:,1:ihalf,:]
+    llps = lnlikes[1:ihalf,:]
+    lpps = lnpriors[1:ihalf,:]
 
-            q = pts[:,jj,k]
-            z = exp(log(0.5) + (log(2.0)-log(0.5))*rand())
+    qs = pts[:,ihalf+1:end,:]
+    llqs = lnlikes[ihalf+1:end,:]
+    lpqs = lnpriors[ihalf+1:end,:]
 
-            pnew = q + z*(p-q)
-            lpnew = logprior(pnew)
+    new_ps, new_llps, new_lpps = update_half(ps, llps, lpps, qs, loglike, logprior, betas)
+    new_qs, new_llqs, new_lpqs = update_half(qs, llqs, lpqs, new_ps, loglike, logprior, betas)
 
-            if lpnew == -Inf
-                new_pts[:,j,k] = pts[:,j,k]
-                new_lnlikes[j,k] = lnlikes[j,k]
-                new_lnpriors[j,k] = lnpriors[j,k]
-            else
-                llnew = loglike(pnew)
-
-                lpacc = betas[k]*(llnew-lnlikes[j,k]) + lpnew - lnpriors[j,k] + nd*log(z)
-
-                if log(rand()) < lpacc
-                    new_pts[:,j,k] = pnew
-                    new_lnlikes[j,k] = llnew
-                    new_lnpriors[j,k] = lpnew
-                else
-                    new_pts[:,j,k] = pts[:,j,k]
-                    new_lnlikes[j,k] = lnlikes[j,k]
-                    new_lnpriors[j,k] = lnpriors[j,k]
-                end
-            end
-        end
-    end
-
-    (sdata(new_pts), sdata(new_lnlikes), sdata(new_lnpriors))
+    new_pts = cat(2, new_ps, new_qs)
+    new_lnlikes = cat(1, new_llps, new_llqs)
+    new_lnpriors = cat(1, new_lpps, new_lpqs)
+    (new_pts, new_lnlikes, new_lnpriors)
 end
 
 """
@@ -178,8 +239,7 @@ chain (so `chain` is of shape `(ndim, nwalkers, ntemp, nstep)`, for example).
 """
 function run_mcmc(pts, loglike, logprior, betas, nstep; thin=1)
     nd, nw, nt = size(pts)
-    lnlikes = [loglike(pts[:,j,k]) for j in 1:nw, k in 1:nt]
-    lnpriors = [logprior(pts[:,j,k]) for j in 1:nw, k in 1:nt]
+    lnlikes, lnpriors = lnlikes_lnpriors(pts, loglike, logprior)
 
     nhalf = div(nstep, 2)
     tc = div(nhalf, 4)
