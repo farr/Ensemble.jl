@@ -242,12 +242,12 @@ function run_mcmc(pts, loglike, logprior, betas, nstep; thin=1)
     lnlikes, lnpriors = lnlikes_lnpriors(pts, loglike, logprior)
 
     nhalf = div(nstep, 2)
-    tc = div(nhalf, 4)
 
     for i in 1:nhalf
         pts, lnlikes, lnpriors = mcmc_step(pts, lnlikes, lnpriors, loglike, logprior, betas)
         pts, lnlikes, lnpriors, ntswap = tswap_step(pts, lnlikes, lnpriors, betas)
         swapfraction = ntswap / nw
+        tc = 10.0 + i/10.0 # tc > 10 always, but asymptotes to "current length / 10"
         betas = tevolve(swapfraction, betas, tc)
     end
 
