@@ -2,7 +2,7 @@ module TestEnsembleKombine
 
 using Ensemble
 
-using Base.Test: @test_approx_eq_eps, @testset
+using Base.Test: @test, @testset
 
 function testgaussian()
     ndim = 10
@@ -38,7 +38,7 @@ function testgaussian()
 
     @testset "Gaussian distribution tests" begin
         for i in 1:ndim
-            @test_approx_eq_eps mean(pts[i,:,:]) mu[i] sqrt(sigma[i,i])/10.0
+            @test isapprox(mean(pts[i,:,:]), mu[i], atol=sqrt(sigma[i,i])/10.0)
         end
     end
 end

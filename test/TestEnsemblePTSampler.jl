@@ -1,6 +1,6 @@
 module TestEnsemblePTSampler
 
-using Base.Test: @test_approx_eq_eps, @testset
+using Base.Test: @test, @testset
 
 using Ensemble
 
@@ -36,11 +36,11 @@ function test_brewer()
 
     @testset "Brewer phase transition distribution" begin
         for i in 1:nd
-            @test_approx_eq_eps mean(chain[i,:,1,:]) 0.99*0.031 0.1*sqrt(0.99*0.01^2 + 0.01*0.1^2)
+            @test isapprox(mean(chain[i,:,1,:]), 0.99*0.031, atol=0.1*sqrt(0.99*0.01^2 + 0.01*0.1^2))
         end
 
         lnZ, dlnZ = EnsemblePTSampler.lnZ(lnlikes, betas)
-        @test_approx_eq_eps lnZ log(100.0) 3*dlnZ
+        @test isapprox(lnZ, log(100.0), atol=3*dlnZ)
     end
 
     chain, lnlikes, lnpriors, betas

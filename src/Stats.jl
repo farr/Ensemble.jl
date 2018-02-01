@@ -6,7 +6,7 @@ export logsumexp
     logsumexp(x,y)
     logsumexp(x)
 
-Return `log(exp(x) + exp(y))` but stably without overflow.  
+Return `log(exp(x) + exp(y))` but stably without overflow.
 
 Single-argument version returns `log(exp(x[1]) + exp(x[2]) + ...)`.
 """
@@ -22,8 +22,6 @@ function logsumexp(x, y)
     end
 end
 
-@vectorize_2arg Number logsumexp
-
 @doc doc"""If applied to a single array, returns `log(exp(x1) + exp(x2) + ...)`.
 
 """ ->
@@ -34,5 +32,5 @@ function logsumexp{T <: Number}(x::AbstractArray{T})
     end
     sum
 end
-        
+
 end

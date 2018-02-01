@@ -229,7 +229,7 @@ Return the log of the PDF defined by the clustered KDE at the point
 ``x``.
 """
 function logpdf(ck, x)
-    logdets = [sum(log(diag(ck.cholfacts[i][:L]))) for i in 1:ncl(ck)]
+    logdets = [sum(log.(diag(ck.cholfacts[i][:L]))) for i in 1:ncl(ck)]
 
     lpdf = -Inf
     for j in 1:npts(ck)

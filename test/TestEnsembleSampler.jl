@@ -2,7 +2,7 @@ module TestEnsembleSampler
 
 using Ensemble
 
-using Base.Test: @test_approx_eq_eps, @testset
+using Base.Test: @test, @testset
 
 function testgaussian()
     ndim = 10
@@ -56,21 +56,21 @@ function testgaussian()
 
     @testset "Gaussian distribution tests" begin
         for i in 1:ndim
-            @test_approx_eq_eps chain_mean[i] mu[i] 0.1*sigma[i,i]
+            @test isapprox(chain_mean[i], mu[i], atol=0.1*sigma[i,i])
         end
 
         chain_evals = eigvals(chain_sigma)
         evals = eigvals(sigma)
 
         for i in 1:ndim
-            @test_approx_eq_eps chain_evals[i] evals[i] 0.1*maximum(evals)
+            @test isapprox(chain_evals[i], evals[i], atol=0.1*maximum(evals))
         end
 
         chain_evecs = eigvecs(chain_sigma)
         evecs = eigvecs(sigma)
 
         for i in 1:ndim
-            @test_approx_eq_eps abs(dot(chain_evecs[:,i], evecs[:,i])) 1.0 0.1
+            @test isapprox(abs(dot(chain_evecs[:,i], evecs[:,i])), 1.0, atol=0.1)
         end
     end
 end
@@ -115,7 +115,7 @@ function make_sinusoidlnprob(ts::Array{Float64, 1}, data::Array{Float64, 1})
 
         sig = zeros(n)
         for i in 1:n
-            sig[i] = a*cos(2.0*pi*ts[i]/P + phi)
+            sig[i] = a*cos.(2.0*pi*ts[i]/P + phi)
         end
 
         resid = data - sig
@@ -142,7 +142,7 @@ function testsinusoid()
     ts = sort(100.0*rand(n))
 
     noise = sigma*randn(n)
-    signal = a*cos(2.0*pi*ts/P + phi0)
+    signal = a*cos.(2.0*pi*ts/P + phi0)
 
     data::Array{Float64, 1} = noise+signal
 
@@ -163,14 +163,14 @@ function testsinusoid()
 
     chain, chainlnp = EnsembleSampler.run_mcmc(p0, lnp0, lnprob, 1000, thin=10)
 
-    as = exp(chain[1,:,:])
-    Ps = exp(chain[2,:,:])
+    as = exp.(chain[1,:,:])
+    Ps = exp.(chain[2,:,:])
     phis = [invlogit(c, 0, 2*pi) for c in chain[3,:,:]]
 
     @testset "sinusoidal probability tests" begin
-        @test_approx_eq_eps mean(as) a 3*std(as)
-        @test_approx_eq_eps mean(Ps) P 3*std(Ps)
-        @test_approx_eq_eps mean(phis) phi0 3*std(phis)
+        @test isapprox(mean(as), a, atol=3*std(as))
+        @test isapprox(mean(Ps), P, atol=3*std(Ps))
+        @test isapprox(mean(phis), phi0, atol=3*std(phis))
     end
 end
 

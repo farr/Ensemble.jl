@@ -1,6 +1,6 @@
 module TestStats
 
-using Base.Test: @test_approx_eq_eps, @test, @testset
+using Base.Test: @test, @test, @testset
 using Ensemble
 using Ensemble.Stats: logsumexp
 
@@ -9,7 +9,7 @@ function testlogsumexp_random()
         x = randn()
         y = randn()
 
-        @test_approx_eq_eps logsumexp(x,y) log(exp(x)+exp(y)) 1e-12
+        @test isapprox(logsumexp(x,y), log(exp(x)+exp(y)))
     end
 end
 

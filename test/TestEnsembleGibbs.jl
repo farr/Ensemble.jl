@@ -19,23 +19,21 @@ function logpselect(x)
 
     return lo - logsumexp(0.0, lo)
 end
-@vectorize_1arg Number logpselect
 
 function logpnselect(x)
     lo = log_odds(x)
 
     return -logsumexp(0.0, lo)
 end
-@vectorize_1arg Number logpnselect
 
 function draw(lambda=lambda, mu=mu, sigma=sigma)
     n = rand(Poisson(lambda))
-    xs = exp(mu + sigma*randn(n))
-    psel = exp(logpselect(xs))
+    xs = exp.(mu + sigma*randn(n))
+    psel = exp.(logpselect.(xs))
 
     sel = rand(n) .< psel
 
-    xs[sel], xs[~sel]
+    xs[sel], xs[.~(sel)]
 end
 
 function lognorm_logpdf(xs, mu, sigma)
@@ -62,7 +60,7 @@ function make_lnprob(xsdet)
         lambda = exp(log_lambda)
         sigma = exp(log_sigma)
 
-        sum(logpselect(xsdet)) + sum(logpnselect(xsndet)) + (ndet + nndet)*log_lambda - lambda + sum(lognorm_logpdf(xsdet, mu, sigma)) + sum(lognorm_logpdf(xsndet, mu, sigma))
+        sum(logpselect.(xsdet)) + sum(logpnselect.(xsndet)) + (ndet + nndet)*log_lambda - lambda + sum(lognorm_logpdf(xsdet, mu, sigma)) + sum(lognorm_logpdf(xsndet, mu, sigma))
     end
 end
 
