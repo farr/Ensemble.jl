@@ -39,7 +39,7 @@ before generating a live point to replace the low-likelihood point
 that is being retired.  This parameter will be adjusted in a control
 loop that tries to ensure that successive live points are
 uncorrelated, as described below in the docs for `retire!`.  A setting
-of `128` is a reasonable default.  
+of `32` is a reasonable default.
 """
 function NestState(logl, logp, pts::Array{Float64, 2}, nmcmc)
     npts = size(pts, 2)
@@ -98,19 +98,17 @@ end
 """
     retire!(nstate, verbose=true)
 
-Retire the lowest-likelihood live point, using the stretch move in an
-MCMC to produce its replacement.  If `verbose == true` then print
-information on the retired point and the number of MCMC steps used.
+Retire the lowest-likelihood live point, using the stretch move in an MCMC to
+produce its replacement.  If `verbose == true` then print information on the
+retired point and the number of MCMC steps used.
 
-The number of MCMC steps is adjusted so that it approaches
-`10*(2/accept_rate - 1)` exponentially with a rate that is
-`1/nlive(nstate)`.  If each accepted stretch move generated a truly
-independent point, this would correspond to running for 10
-autocorrelation lengths of the resulting series to produce the
-replacement live point.  The factor 10 is a "safety factor", and the
-exponential approach with rate constant ensures that the internal MCMC
-adapts to the "local" conditions of the likelihood vs. prior curve.
-"""
+The number of MCMC steps is adjusted so that it approaches `2*(2/accept_rate -
+1)` exponentially with a rate that is `1/nlive(nstate)`.  If each accepted
+stretch move generated a truly independent point, this would correspond to
+running for 2 autocorrelation lengths of the resulting series to produce the
+replacement live point.  The factor 2 is a "safety factor", and the exponential
+approach with rate constant ensures that the internal MCMC adapts to the "local"
+conditions of the likelihood vs. prior curve.  """
 function retire!(n::NestState, verbose)
     nd = ndim(n)
     nl = nlive(n)
@@ -136,7 +134,7 @@ function retire!(n::NestState, verbose)
     lp = n.livelogps[i]
 
     nacc = 0
-    
+
     for i in 1:n.nmcmc
         q = n.livepts[:,rand(1:nl)]
         z = exp(log(0.5) + rand()*(log(2.0)-log(0.5)))
@@ -164,21 +162,21 @@ function retire!(n::NestState, verbose)
     facc = float(nacc)/float(n.nmcmc)
 
     # Based on past acceptance rate, estimate the best-possible bpACL
-    # = 2/p - 1), and then plan to run for 10*bpACL.  Average the plan
+    # = 2/p - 1), and then plan to run for 2*bpACL.  Average the plan
     # over the past nlive retirings to compute the next mcmc length.
     # If there were no acceptances, plan to run for twice as long
     # (still averaging over the last nlive retirings).
     if nacc == 0
-        n.nmcmc_exact = (1.0 + 1.0/nl)*n.nmcmc_exact 
+        n.nmcmc_exact = (1.0 + 1.0/nl)*n.nmcmc_exact
     else
-        n.nmcmc_exact = (1.0 - 1.0/nl)*n.nmcmc_exact + 10.0/nl*(2.0/facc - 1.0)
+        n.nmcmc_exact = (1.0 - 1.0/nl)*n.nmcmc_exact + 2.0/nl*(2.0/facc - 1.0)
     end
     n.nmcmc = round(Int,n.nmcmc_exact)
 
     if verbose
         println(@sprintf("Retired point with ll = %.4f; accept = %.4f; next nmcmc = %d", n.deadlogls[end], facc, n.nmcmc))
     end
-    
+
     n
 end
 
@@ -186,14 +184,14 @@ end
 uncertainty.  """
 function logZ(n::NestState)
     nl = nlive(n)
-    
+
     loglivewt = n.logx - log(nl)
 
     logZdead = logsumexp(n.deadlogwts + n.deadlogls)
     logZlive = logsumexp(n.livelogls + loglivewt)
     logZlive_big = maximum(n.livelogls) + n.logx
     logZlive_small = minimum(n.livelogls) + n.logx
-    
+
     logZ = logsumexp(logZdead, logZlive)
     logZ_big = logsumexp(logZdead, logZlive_big)
     logZ_small = logsumexp(logZdead, logZlive_small)
@@ -208,7 +206,7 @@ function postsample(n::NestState)
     nl = nlive(n)
 
     loglivewt = n.logx - log(nl)
-    
+
     pts = cat(2, n.deadpts, n.livepts)
     lls = cat(1, n.deadlogls, n.livelogls)
     logwts = cat(1, n.deadlogls + n.deadlogwts, n.livelogls + loglivewt)
@@ -255,7 +253,7 @@ function run!(n::NestState, dZStop; verbose=true, ckpt_file=nothing)
             h5open(f -> write(f, n), tmpfile, "w")
             mv(tmpfile, ckpt_file, remove_destination=true)
         end
-        
+
         if dlZ < dZStop
             break
         end
