@@ -163,29 +163,47 @@ function retire!(n::NestState, verbose)
     facc = float(nacc)/float(n.nmcmc)
 
     acl = -Inf
+    star_warn = "*"
     for j in 1:nd
-        nsum = round(Int, n.nmcmc/2)
         ac = Acor.acf(vec(pts[j,:]))
-        a = 2.0*sum(ac[1:nsum]) - 1.0 # ACL is sum to half nmcmc
-        a *= 1.0/0.865 # Correct for the fact that we are only summing over 2 ACLs, assuming exponential decay
+
+        cac = 2.0*cumsum(ac) - 1.0
+
+        a = cac[round(Int, size(cac,1)/2)]
+        broken = false
+        for i in 1:round(Int, size(cac,1)/2) # Sum up to half the chain
+            if 2*cac[i] < i # Ensure we have summed over at least 2 ACLs, then we can stop
+                a = cac[i]
+                broken = true
+                break
+            end
+        end
+
         if a > acl
             acl = a
+            if broken
+                star_warn = " "
+            else
+                star_warn = "*"
+            end
         end
     end
-    # Run to at least 4 ACLs, just to be safe.
-    n.nmcmc_exact = (1.0-1.0/nl)*n.nmcmc_exact + 1.0/nl*4.0*acl
-    n.nmcmc = round(Int, n.nmcmc_exact)
 
-    if n.nmcmc <= 8
-        n.nmcmc=8 # Won't do fewer than this!
+    # Run to at least 10 ideal ACLs; if no steps were accepted, then double current run length
+    if facc == 0
+        n.nmcmc_exact = (1.0 + 1.0/nl)*n.nmcmc_exact
+    else
+        nrun = 10.0*(2/facc - 1)
+        n.nmcmc_exact = (1.0-1.0/nl)*n.nmcmc_exact + 1.0/nl*nrun
     end
+    n.nmcmc = round(Int, n.nmcmc_exact)
 
     n.livepts[:,imin] = pt
     n.livelogls[imin] = ll
     n.livelogps[imin] = lp
 
     if verbose
-        println(@sprintf("Retired point with ll = %.4f; accept = %.4f; ACL = %.1f; next nmcmc = %d", n.deadlogls[end], facc, acl, n.nmcmc))
+        println(@sprintf("Retired point with ll = %.4f; accept = %.4f; ACL = %.1f%s; next nmcmc = %d", n.deadlogls[end], facc, acl, star_warn, n.nmcmc))
     end
 
     n
