@@ -1,5 +1,6 @@
 module EnsembleNest
 
+using ..Acor
 using ..EnsembleSampler
 using ..Stats
 
@@ -135,6 +136,8 @@ function retire!(n::NestState, verbose)
 
     nacc = 0
 
+    pts = zeros(nd, n.nmcmc)
+
     for i in 1:n.nmcmc
         q = n.livepts[:,rand(1:nl)]
         z = exp(log(0.5) + rand()*(log(2.0)-log(0.5)))
@@ -153,28 +156,36 @@ function retire!(n::NestState, verbose)
                 lp = newlp
             end
         end
+
+        pts[:,i] = pt
+    end
+
+    facc = float(nacc)/float(n.nmcmc)
+
+    acl = -Inf
+    for j in 1:nd
+        nsum = round(Int, n.nmcmc/2)
+        ac = Acor.acf(vec(pts[j,:]))
+        a = 2.0*sum(ac[1:nsum]) - 1.0 # ACL is sum to half nmcmc
+        a *= 1.0/0.865 # Correct for the fact that we are only summing over 2 ACLs, assuming exponential decay
+        if a > acl
+            acl = a
+        end
+    end
+    # Run to at least 4 ACLs, just to be safe.
+    n.nmcmc_exact = (1.0-1.0/nl)*n.nmcmc_exact + 1.0/nl*4.0*acl
+    n.nmcmc = round(Int, n.nmcmc_exact)
+
+    if n.nmcmc <= 8
+        n.nmcmc=8 # Won't do fewer than this!
     end
 
     n.livepts[:,imin] = pt
     n.livelogls[imin] = ll
     n.livelogps[imin] = lp
 
-    facc = float(nacc)/float(n.nmcmc)
-
-    # Based on past acceptance rate, estimate the best-possible bpACL
-    # = 2/p - 1), and then plan to run for 2*bpACL.  Average the plan
-    # over the past nlive retirings to compute the next mcmc length.
-    # If there were no acceptances, plan to run for twice as long
-    # (still averaging over the last nlive retirings).
-    if nacc == 0
-        n.nmcmc_exact = (1.0 + 1.0/nl)*n.nmcmc_exact
-    else
-        n.nmcmc_exact = (1.0 - 1.0/nl)*n.nmcmc_exact + 2.0/nl*(2.0/facc - 1.0)
-    end
-    n.nmcmc = round(Int,n.nmcmc_exact)
-
     if verbose
-        println(@sprintf("Retired point with ll = %.4f; accept = %.4f; next nmcmc = %d", n.deadlogls[end], facc, n.nmcmc))
+        println(@sprintf("Retired point with ll = %.4f; accept = %.4f; ACL = %.1f; next nmcmc = %d", n.deadlogls[end], facc, acl, n.nmcmc))
     end
 
     n
