@@ -1,5 +1,7 @@
 module Stats
 
+import Base
+
 export logsumexp
 
 """
@@ -22,10 +24,7 @@ function logsumexp(x, y)
     end
 end
 
-@doc doc"""If applied to a single array, returns `log(exp(x1) + exp(x2) + ...)`.
-
-""" ->
-function logsumexp{T <: Number}(x::AbstractArray{T})
+function logsumexp(x::AbstractArray{T}) where {T <: Number}
     sum = -Inf
     for i in eachindex(x)
         sum = logsumexp(x[i], sum)

@@ -1,8 +1,12 @@
 module TestEnsemblePTSampler
 
-using Base.Test: @test, @testset
+using Distributed
+
+using Test: @test, @testset
 
 using Ensemble
+
+using Statistics
 
 function test_brewer()
     nd = 5
@@ -15,7 +19,7 @@ function test_brewer()
         m = 0.031
 
         logl1 = -nd*log(v) - nd/2*log(2*pi) - 0.5*sum(x.*x/(v*v))
-        logl2 = -nd*log(u) - nd/2*log(2*pi) - 0.5*sum((x-m).*(x-m)/(u*u))
+        logl2 = -nd*log(u) - nd/2*log(2*pi) - 0.5*sum((x.-m).*(x.-m)/(u*u))
 
         return Stats.logsumexp(logl1, log(99.0) + logl2)
     end
@@ -28,9 +32,9 @@ function test_brewer()
         end
     end
 
-    pts = rand(nd,nw,nt) - 0.5
+    pts = rand(nd,nw,nt) .- 0.5
 
-    betas = collect(linspace(1, 0, nt))
+    betas = collect(range(1, stop=0, length=nt))
 
     chain, lnlikes, lnpriors, betas = EnsemblePTSampler.run_mcmc(pts, loglike, logprior, betas, 8192, thin=4)
 

@@ -2,8 +2,13 @@ module EnsembleKombine
 
 using ..Stats
 
+using LinearAlgebra
+
 import Base:
     rand
+using Random
+
+using Statistics
 
 """
     rescale(pts)
@@ -13,8 +18,8 @@ Transform ``pts`` (of size ``(ndim, npts)``) into zero-mean, unit covaraince.
 function rescale(pts)
     nd, np = size(pts)
 
-    mu = vec(mean(pts, 2))
-    cv = cov(pts, 2)
+    mu = vec(mean(pts, dims=2))
+    cv = cov(pts, dims=2)
 
     repts = zeros(nd, np)
     for j in 1:np
@@ -23,13 +28,13 @@ function rescale(pts)
         end
     end
 
-    F = cholfact(cv)
+    F = cholesky(cv)
 
     # cv = L*L^T
     # so if x is N(0,1) then
     # y = Lx has covariance cv: y y^T = L x x^T L^T = cv
 
-    F[:L] \ repts
+    F.L \ repts
 end
 
 """
@@ -44,7 +49,7 @@ function update_means(pts, mus, assigns)
     new_mus = zeros(size(pts, 1), ncluster)
     for i in 1:ncluster
         ps = pts[:, assigns.==i]
-        new_mus[:,i] = mean(ps, 2)
+        new_mus[:,i] = mean(ps, dims=2)
     end
 
     new_mus
@@ -150,10 +155,10 @@ Methods defined on this object include
 * ``rand(ck[, dims...])`` which returns a random draw from the KDE PDF
   (or an array of such draws).
 """
-type ClusteredKDE
+struct ClusteredKDE
     pts::Array{Float64, 2}
     assigns::Array{Int, 1}
-    cholfacts::Array{LinAlg.Cholesky{Float64,Array{Float64,2}}, 1}
+    cholfacts::Array{LinearAlgebra.Cholesky{Float64,Array{Float64,2}}, 1}
 end
 
 """
@@ -167,17 +172,17 @@ function ClusteredKDE(pts, n)
 
     _, assigns = kmeans(pts, n)
 
-    cfacts = LinAlg.Cholesky{Float64,Array{Float64,2}}[]
+    cfacts = LinearAlgebra.Cholesky{Float64,Array{Float64,2}}[]
     for j in 1:n
         sel = assigns.==j
         ps = pts[:,sel]
 
         @assert size(ps,2)>n "one cluster has too few points"
 
-        cv = cov(ps, 2)
+        cv = cov(ps, dims=2)
         cv *= (1.0/size(ps, 2)).^(2.0/(4.0 + nd)) # Scott's rule
 
-        push!(cfacts, cholfact(cv))
+        push!(cfacts, cholesky(cv))
     end
 
     ClusteredKDE(copy(pts), assigns, cfacts)
@@ -199,7 +204,7 @@ function ncl(ck::ClusteredKDE)
 end
 
 """
-    rand(ck::ClusteredKDE, [dims...])
+    rand(ck::ClusteredKDE, [n::Int])
 
 Return a random point or array of such points from the clustered KDE.
 """
@@ -208,17 +213,16 @@ function rand(ck::ClusteredKDE)
     p = ck.pts[:, j]
     F = ck.cholfacts[ck.assigns[j]]
 
-    p + F[:L]*randn(ndim(ck))
+    p + F.L*randn(ndim(ck))
 end
 
-function rand(ck::ClusteredKDE, dims...)
-    d = push!([ndim(ck)], dims...)
+function rand(ck::ClusteredKDE, n::Int)
+    pts = zeros(ndim(ck), n)
 
-    pts = zeros(d...)
-    cr = CartesianRange(size(pts)[2:end])
-    for j in cr
+    for j in 1:n
         pts[:,j] = rand(ck)
     end
+
     pts
 end
 
@@ -229,7 +233,7 @@ Return the log of the PDF defined by the clustered KDE at the point
 ``x``.
 """
 function logpdf(ck, x)
-    logdets = [sum(log.(diag(ck.cholfacts[i][:L]))) for i in 1:ncl(ck)]
+    logdets = [sum(log.(diag(ck.cholfacts[i].L))) for i in 1:ncl(ck)]
 
     lpdf = -Inf
     for j in 1:npts(ck)
@@ -284,7 +288,7 @@ function build_proposal_kde(pts, ncmax=nothing)
                     bestck = ck
                 end
             catch x
-                if isa(x, AssertionError) || isa(x, LinAlg.PosDefException)
+                if isa(x, AssertionError) || isa(x, LinearAlgebra.PosDefException)
                     # Do nothing
                 else
                     rethrow()

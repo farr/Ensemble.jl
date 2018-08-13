@@ -1,9 +1,11 @@
 module TestEnsembleNest
 
-using Base.Test: @test, @testset
+using Test: @test, @testset
 
 using Ensemble
 using .EnsembleNest
+
+using Statistics
 
 function test5DGaussian()
     nd = 5
@@ -16,8 +18,8 @@ function test5DGaussian()
         end
     end
 
-    mu = 0.5*ones(nd) + 0.1*rand((nd,))
-    sigma = 0.01*ones(nd)
+    mu = 0.5.*ones(nd) .+ 0.1.*rand(Float64, (nd,))
+    sigma = 0.01.*ones(nd)
 
     function logl(x)
         -0.5*nd*log(2.0*pi) - sum(log.(sigma)) - 0.5*sum((x-mu).*(x-mu)./(sigma.*sigma))
@@ -25,7 +27,7 @@ function test5DGaussian()
 
     nmcmc = 100
     nl = 1024
-    xs = rand((nd, nl))
+    xs = rand(Float64, (nd, nl))
     ns = NestState(logl, logp, xs, nmcmc)
 
     run!(ns, 0.1)

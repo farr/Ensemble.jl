@@ -10,8 +10,8 @@ x = XXX_value(p, args...)
 log_jacobian = XXX_logjac(x, p, args...)
 ```
 
-where `log_jacobian` gives ``\log \left| \frac{\mathrm{d}
-x}{\mathrm{d} p} \right|``, which is the approprate factor to multiply
+where `log_jacobian` gives ``\\log \\left| \\frac{\\mathrm{d}
+x}{\\mathrm{d} p} \\right|``, which is the approprate factor to multiply
 a density in `x` to produce a density in `p`.  In other words,
 `log_jacobian` is the factor that should be introduced into the prior
 to properly account for the reparameterization.
@@ -23,7 +23,7 @@ module Parameterizations
 """
     bounded_param(x, low, high)
 
-Variables that are bounded between `low` and `high`.  
+Variables that are bounded between `low` and `high`.
 """
 bounded_param(x, low, high) = log(x-low) - log(high-x)
 

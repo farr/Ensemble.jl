@@ -1,5 +1,9 @@
 module EnsembleSampler
 
+using Distributed
+
+using Printf
+
 using ..Acor
 
 ## Store ensembles as (ndim, nwalkers) arrays.
@@ -13,7 +17,7 @@ the `qs` as fixed.
 function propose(ps::Array{Float64, 2}, qs::Array{Float64, 2})
     n = size(ps, 2)
 
-    zs = exp.(log(0.5) + rand((n,))*(log(2.0) - log(0.5)))
+    zs = exp.(log(0.5) .+ rand(Float64, (n,)).*(log(2.0) - log(0.5)))
     inds = rand(1:n, (n,))
 
     ps_out = zeros(size(ps))

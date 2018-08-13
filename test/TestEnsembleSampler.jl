@@ -2,7 +2,9 @@ module TestEnsembleSampler
 
 using Ensemble
 
-using Base.Test: @test, @testset
+using LinearAlgebra: dot, factorize, eigvals, eigvecs
+using Statistics
+using Test: @test, @testset
 
 function testgaussian()
     ndim = 10
@@ -76,7 +78,7 @@ function testgaussian()
 end
 
 sqr(x) = x*x
-sqr{T}(x::AbstractArray{T,1}) = x.*x
+sqr(x::AbstractArray{T,1}) where {T} = x.*x
 
 # SNR = A/2*sqrt(n)/sigma
 
@@ -142,7 +144,7 @@ function testsinusoid()
     ts = sort(100.0*rand(n))
 
     noise = sigma*randn(n)
-    signal = a*cos.(2.0*pi*ts/P + phi0)
+    signal = a.*cos.(2.0*pi.*ts./P .+ phi0)
 
     data::Array{Float64, 1} = noise+signal
 

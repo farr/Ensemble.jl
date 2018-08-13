@@ -1,8 +1,11 @@
 module TestEnsembleKombine
 
 using Ensemble
+using LinearAlgebra
 
-using Base.Test: @test, @testset
+using Statistics
+
+using Test: @test, @testset
 
 function testgaussian()
     ndim = 10
@@ -10,7 +13,7 @@ function testgaussian()
     sigma = randn(ndim, ndim)
     sigma = sigma'*sigma
 
-    sigmafact = cholfact(sigma)
+    sigmafact = cholesky(sigma)
 
     function logpost(x)
         dx = x .- mu

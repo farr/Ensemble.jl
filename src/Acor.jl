@@ -1,5 +1,8 @@
 module Acor
 
+using FFTW
+using Statistics
+
 """ Returns an estimate of the autocorrelation function of the given
 series.  """
 function acf(xs::Array{Float64, 1})
@@ -130,7 +133,7 @@ MCMC samples of the log-likelihood.  The AIC is `-2.0*max(lnps) +
 nparams`.  The estimate assumes Gaussianity of the likelihood
 function; under this assumption the mean of the log-likelihood is
 `nparams/2.0` below the maximum and the variance of the log-likelihood
-is `nparams/2.0`.  So the estimate of the AIC is 
+is `nparams/2.0`.  So the estimate of the AIC is
 
     waic = -2.0*mean(lnps) + 2.0*var(lnps)
 

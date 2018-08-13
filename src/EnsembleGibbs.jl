@@ -10,6 +10,8 @@ latent data."""
 
 module EnsembleGibbs
 
+using Distributed
+
 """
     propose(ps, qs)
 
@@ -20,7 +22,7 @@ function propose(ps::Array{Float64, 2}, qs::Array{Float64, 2})
     n = size(ps,2)
     nd = size(ps,1)
 
-    zs = exp.(log(0.5) + (log(2.0) - log(0.5))*rand(n))
+    zs = exp.(log(0.5) .+ (log(2.0) - log(0.5)).*rand(n))
     inds = rand(1:n, (n,))
 
     ps_new = zeros(size(ps))

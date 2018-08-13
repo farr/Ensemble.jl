@@ -1,5 +1,9 @@
 module EnsemblePTSampler
 
+using Distributed
+
+using Statistics
+
 function propose(ps, qs)
     nd, nw, nt = size(ps)
 
@@ -117,9 +121,9 @@ function mcmc_step(pts, lnlikes, lnpriors, loglike, logprior, betas)
     new_ps, new_llps, new_lpps = update_half(ps, llps, lpps, qs, loglike, logprior, betas)
     new_qs, new_llqs, new_lpqs = update_half(qs, llqs, lpqs, new_ps, loglike, logprior, betas)
 
-    new_pts = cat(2, new_ps, new_qs)
-    new_lnlikes = cat(1, new_llps, new_llqs)
-    new_lnpriors = cat(1, new_lpps, new_lpqs)
+    new_pts = cat(new_ps, new_qs, dims=2)
+    new_lnlikes = cat(new_llps, new_llqs, dims=1)
+    new_lnpriors = cat(new_lpps, new_lpqs, dims=1)
     (new_pts, new_lnlikes, new_lnpriors)
 end
 
@@ -288,7 +292,7 @@ thermodynamic integration.
 
 """
 function lnZ(lnlikes, betas)
-    mean_lnlikes = vec(mean(lnlikes, (1, 3)))
+    mean_lnlikes = vec(mean(lnlikes, dims=(1, 3)))
 
     bs_thin = [betas[1]]
     lnls_thin = [mean_lnlikes[1]]

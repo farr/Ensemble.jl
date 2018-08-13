@@ -1,5 +1,5 @@
 using Ensemble
-using Base.Test: @testset
+using Test: @testset
 
 include("TestStats.jl")
 include("TestEnsembleSampler.jl")

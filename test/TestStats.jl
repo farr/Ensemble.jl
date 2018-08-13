@@ -1,6 +1,6 @@
 module TestStats
 
-using Base.Test: @test, @test, @testset
+using Test: @test, @test, @testset
 using Ensemble
 using Ensemble.Stats: logsumexp
 

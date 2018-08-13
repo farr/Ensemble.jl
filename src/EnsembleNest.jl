@@ -5,16 +5,19 @@ using ..EnsembleSampler
 using ..Stats
 
 using HDF5
+using Printf
 
 import Base:
     write
+
+using Statistics
 
 export NestState, ndim, nlive, ndead, retire!, logZ, logdZ, postsample, run!
 
 """
 Nested sampling state object.
 """
-type NestState
+mutable struct NestState
     likelihood
     prior
     nmcmc::Int
@@ -101,13 +104,16 @@ end
 
 Retire the lowest-likelihood live point, using the stretch move in an MCMC to
 produce its replacement.  If `verbose == true` then print information on the
-retired point and the number of MCMC steps used.
+retired point and the number of MCMC steps used.  In particular, print an
+estimate of the autocorrelation length based on the current point's sample
+chain; a '*' is added to the estimate if internal diagnostics suggest that it
+may be unreliable due to a short chain.
 
-The number of MCMC steps is adjusted so that it approaches `2*(2/accept_rate -
+The number of MCMC steps is adjusted so that it approaches `10*(2/accept_rate -
 1)` exponentially with a rate that is `1/nlive(nstate)`.  If each accepted
 stretch move generated a truly independent point, this would correspond to
-running for 2 autocorrelation lengths of the resulting series to produce the
-replacement live point.  The factor 2 is a "safety factor", and the exponential
+running for 10 autocorrelation lengths of the resulting series to produce the
+replacement live point.  The factor 10 is a "safety factor", and the exponential
 approach with rate constant ensures that the internal MCMC adapts to the "local"
 conditions of the likelihood vs. prior curve.  """
 function retire!(n::NestState, verbose)
@@ -115,10 +121,10 @@ function retire!(n::NestState, verbose)
     nl = nlive(n)
 
     # Find the point we are killing
-    imin = indmin(n.livelogls)
+    imin = argmin(n.livelogls)
 
     # Update the dead points, logl, logwt
-    n.deadpts = cat(2, n.deadpts, reshape(n.livepts[:,imin], (nd, 1)))
+    n.deadpts = cat(n.deadpts, reshape(n.livepts[:,imin], (nd, 1)), dims=2)
     push!(n.deadlogls, n.livelogls[imin])
     push!(n.deadlogwts, n.logx - log(nl))
 
@@ -167,7 +173,7 @@ function retire!(n::NestState, verbose)
     for j in 1:nd
         ac = Acor.acf(vec(pts[j,:]))
 
-        cac = 2.0*cumsum(ac) - 1.0
+        cac = 2.0*cumsum(ac) .- 1.0
 
         a = cac[round(Int, size(cac,1)/2)]
         broken = false
@@ -216,8 +222,8 @@ function logZ(n::NestState)
 
     loglivewt = n.logx - log(nl)
 
-    logZdead = logsumexp(n.deadlogwts + n.deadlogls)
-    logZlive = logsumexp(n.livelogls + loglivewt)
+    logZdead = logsumexp(n.deadlogwts .+ n.deadlogls)
+    logZlive = logsumexp(n.livelogls .+ loglivewt)
     logZlive_big = maximum(n.livelogls) + n.logx
     logZlive_small = minimum(n.livelogls) + n.logx
 
@@ -236,9 +242,9 @@ function postsample(n::NestState)
 
     loglivewt = n.logx - log(nl)
 
-    pts = cat(2, n.deadpts, n.livepts)
-    lls = cat(1, n.deadlogls, n.livelogls)
-    logwts = cat(1, n.deadlogls + n.deadlogwts, n.livelogls + loglivewt)
+    pts = cat(n.deadpts, n.livepts, dims=2)
+    lls = cat(n.deadlogls, n.livelogls, dims=1)
+    logwts = cat(n.deadlogls .+ n.deadlogwts, n.livelogls .+ loglivewt, dims=1)
 
     logwtmax = maximum(logwts)
     post = zeros((nd, 0))
@@ -246,7 +252,7 @@ function postsample(n::NestState)
 
     for i in 1:size(pts, 2)
         if logwtmax + log(rand()) < logwts[i]
-            post = cat(2, post, reshape(pts[:,i], (nd, 1)))
+            post = cat(post, reshape(pts[:,i], (nd, 1)), dims=2)
             logls = push!(logls, lls[i])
         end
     end
@@ -298,8 +304,8 @@ end
 
 Return the DIC for the given nested state.
 
-The DIC is defined as ``\mathrm{DIC} \equiv -2\left( \langle \log L
-\rangle - \var \log L \right)``.
+The DIC is defined as ``\\mathrm{DIC} \\equiv -2\\left( \\langle \\log L
+\\rangle - \\var \\log L \\right)``.
 """
 function dic(ns::NestState)
     _, lls = postsample(ns)

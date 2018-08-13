@@ -1,9 +1,10 @@
 module TestEnsembleGibbs
 
-using Base.Test: @test, @testset
+using Test: @test, @testset
 using Distributions
 using Ensemble
 using Ensemble.Stats: logsumexp
+using Statistics
 
 const snr_half = 3.0
 const mu = log(3.0)
@@ -28,7 +29,7 @@ end
 
 function draw(lambda=lambda, mu=mu, sigma=sigma)
     n = rand(Poisson(lambda))
-    xs = exp.(mu + sigma*randn(n))
+    xs = exp.(mu .+ sigma.*randn(n))
     psel = exp.(logpselect.(xs))
 
     sel = rand(n) .< psel
@@ -37,7 +38,7 @@ function draw(lambda=lambda, mu=mu, sigma=sigma)
 end
 
 function lognorm_logpdf(xs, mu, sigma)
-    out = zeros(xs)
+    out = zeros(size(xs)...)
 
     log_inv_sqrt_2pi = -0.5*log(2.0*pi)
     log_sigma = log(sigma)
@@ -99,9 +100,9 @@ function testall()
     end
 
     @testset "EnsembleGibbs tests" begin
-        @test((mean(pts[1,:,:] - ptrue[1])/std(pts[1,:,:]) < 3))
-        @test((mean(pts[2,:,:] - ptrue[2])/std(pts[2,:,:]) < 3))
-        @test((mean(pts[3,:,:] - ptrue[3])/std(pts[3,:,:]) < 3))
+        @test((mean(pts[1,:,:] .- ptrue[1])/std(pts[1,:,:]) < 3))
+        @test((mean(pts[2,:,:] .- ptrue[2])/std(pts[2,:,:]) < 3))
+        @test((mean(pts[3,:,:] .- ptrue[3])/std(pts[3,:,:]) < 3))
     end
 end
 
