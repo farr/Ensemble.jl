@@ -286,7 +286,7 @@ function run!(n::NestState, dZStop; verbose=true, ckpt_file=nothing)
         if ckpt_file != nothing
             tmpfile = "$(ckpt_file).temp"
             h5open(f -> write(f, n), tmpfile, "w")
-            mv(tmpfile, ckpt_file, remove_destination=true)
+            mv(tmpfile, ckpt_file, force=true)
         end
 
         if dlZ < dZStop
