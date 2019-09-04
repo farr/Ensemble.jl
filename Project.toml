@@ -1,7 +1,7 @@
 name = "Ensemble"
 uuid = "3875dfec-0b3d-4f32-b40f-7c98cee5d882"
 author = ["Will M. Farr <wmfarr@gmail.com>"]
-version = "0.1.0"
+version = "0.2.0"
 
 [deps]
 Distributed = "8ba89e20-285c-5b6f-9357-94700520ee1b"
