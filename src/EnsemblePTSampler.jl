@@ -226,7 +226,7 @@ Run a MCMC simulation of length `nstep`.
 
 The simulation will consist of a "burnin" phase and a "sampling" phase, each
 involving half `nstep` iterations.  During "burnin", the temperatures of the
-chain will adapt with a time constant of 1/4 of the burnin length.  During
+chain will adapt with a time constant of 1/10 of the burnin length.  During
 sampling the temperatures are fixed to preserve detailed balance.
 
 The function will return `(chain, chainloglike, chainlogprior, new_betas)` where
