@@ -195,11 +195,11 @@ function retire!(n::NestState, verbose)
         end
     end
 
-    # Run to at least 10 ideal ACLs; if no steps were accepted, then double current run length
+    # Run to at least 2 ideal ACLs; if no steps were accepted, then double current run length
     if facc == 0
         n.nmcmc_exact = (1.0 + 1.0/nl)*n.nmcmc_exact
     else
-        nrun = 10.0*(2/facc - 1)
+        nrun = 2*(2/facc - 1)
         n.nmcmc_exact = (1.0-1.0/nl)*n.nmcmc_exact + 1.0/nl*nrun
     end
     n.nmcmc = round(Int, n.nmcmc_exact)
