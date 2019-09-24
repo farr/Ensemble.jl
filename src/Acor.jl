@@ -32,7 +32,7 @@ function acl(xs::Array{Float64, 1})
 
     n = size(ac, 1)
 
-    cumac = 2.0*cumsum(ac) - 1.0
+    cumac = 2.0.*cumsum(ac) .- 1.0
     for i in 1:div(n,2)
         if cumac[i] < i/5
             return cumac[i]
