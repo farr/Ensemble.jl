@@ -8,7 +8,7 @@ using HDF5
 using Printf
 
 import Base:
-    write
+    read, write
 
 using Statistics
 
@@ -79,6 +79,10 @@ function write(f::Union{HDF5File, HDF5Group}, ns::NestState)
     f["logx"] = ns.logx
     f["loglthresh"] = ns.loglthresh
     f["safety_factor"] = ns.safety_factor
+end
+
+function read(f::Union{HDF5File, HDF5Group}, ::Type{NestState})
+    NestState(f)
 end
 
 """Return the dimension of the problem in `n`."""
