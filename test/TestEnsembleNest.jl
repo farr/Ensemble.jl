@@ -26,7 +26,7 @@ function test5DGaussian()
     end
 
     nmcmc = 100
-    nl = 1024
+    nl = 2048
     xs = rand(Float64, (nd, nl))
     ns = NestState(logl, logp, xs, nmcmc)
 

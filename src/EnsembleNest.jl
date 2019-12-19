@@ -30,22 +30,22 @@ mutable struct NestState
     deadlogwts::Array{Float64,1}
     logx::Float64
     loglthresh::Float64
+    safety_factor::Float64
 end
 
 """
-    NestState(loglike, logprior, init, nmcmc)
+    NestState(loglike, logprior, init, nmcmc; safety_factor=1)
 
 Return a `NestState` object initialised from the like points in the 2D
 array `init` using the given log-likelihood and log-prior functions.
 
-`nmcmc` will be used initially to control the number of steps taken
-before generating a live point to replace the low-likelihood point
-that is being retired.  This parameter will be adjusted in a control
-loop that tries to ensure that successive live points are
-uncorrelated, as described below in the docs for `retire!`.  A setting
-of `32` is a reasonable default.
-"""
-function NestState(logl, logp, pts::Array{Float64, 2}, nmcmc)
+`nmcmc` will be used initially to control the number of steps taken before
+generating a live point to replace the low-likelihood point that is being
+retired.  This parameter will be adjusted in a control loop using the
+`safety_factor` parameter that tries to ensure that successive live points are
+uncorrelated, as described below in the docs for `retire!`.  A setting of `32`
+is a reasonable default. """
+function NestState(logl, logp, pts::Array{Float64, 2}, nmcmc; safety_factor=1.0)
     npts = size(pts, 2)
     ndim = size(pts, 1)
 
@@ -56,7 +56,7 @@ function NestState(logl, logp, pts::Array{Float64, 2}, nmcmc)
         livelogls[i] = logl(pts[:,i])
     end
 
-    NestState(logl, logp, nmcmc, nmcmc, copy(pts), livelogps, livelogls, zeros((ndim,0)), zeros(0), zeros(0), 0.0, -Inf)
+    NestState(logl, logp, nmcmc, nmcmc, copy(pts), livelogps, livelogls, zeros((ndim,0)), zeros(0), zeros(0), 0.0, -Inf, safety_factor)
 end
 
 """Reading and writing NestState objects from HDF5"""
@@ -64,7 +64,7 @@ function NestState(f::Union{HDF5File,HDF5Group}; logl=nothing, logp=nothing)
     NestState(logl, logp, read(f, "nmcmc"), read(f, "nmcmc_exact"),
               read(f, "livepts"), read(f, "livelogps"), read(f, "livelogls"),
               read(f, "deadpts"), read(f, "deadlogls"), read(f, "deadlogwts"),
-              read(f, "logx"), read(f, "loglthresh"))
+              read(f, "logx"), read(f, "loglthresh"), read(f, "safety_factor"))
 end
 
 function write(f::Union{HDF5File, HDF5Group}, ns::NestState)
@@ -78,6 +78,7 @@ function write(f::Union{HDF5File, HDF5Group}, ns::NestState)
     f["deadlogwts", "compress", 3, "shuffle", ()] = ns.deadlogwts
     f["logx"] = ns.logx
     f["loglthresh"] = ns.loglthresh
+    f["safety_factor"] = ns.safety_factor
 end
 
 """Return the dimension of the problem in `n`."""
@@ -109,12 +110,12 @@ estimate of the autocorrelation length based on the current point's sample
 chain; a '*' is added to the estimate if internal diagnostics suggest that it
 may be unreliable due to a short chain.
 
-The number of MCMC steps is adjusted so that it approaches `10*(2/accept_rate -
-1)` exponentially with a rate that is `1/nlive(nstate)`.  If each accepted
-stretch move generated a truly independent point, this would correspond to
-running for 10 autocorrelation lengths of the resulting series to produce the
-replacement live point.  The factor 10 is a "safety factor", and the exponential
-approach with rate constant ensures that the internal MCMC adapts to the "local"
+The number of MCMC steps is adjusted so that it approaches
+`safety_factor*(2/accept_rate - 1)` exponentially with a rate that is
+`1/nlive(nstate)`.  If each accepted stretch move generated a truly independent
+point, this would correspond to running for `safety_factor` autocorrelation
+lengths of the resulting series to produce the replacement live point.  The
+exponential approach ensures that the internal MCMC adapts to the "local"
 conditions of the likelihood vs. prior curve.  """
 function retire!(n::NestState, verbose)
     nd = ndim(n)
@@ -195,11 +196,11 @@ function retire!(n::NestState, verbose)
         end
     end
 
-    # Run to at least 2 ideal ACLs; if no steps were accepted, then double current run length
+    # Run to at least safety_factor ideal ACLs; if no steps were accepted, then double current run length
     if facc == 0
         n.nmcmc_exact = (1.0 + 1.0/nl)*n.nmcmc_exact
     else
-        nrun = 2*(2/facc - 1)
+        nrun = n.safety_factor*(2/facc - 1)
         n.nmcmc_exact = (1.0-1.0/nl)*n.nmcmc_exact + 1.0/nl*nrun
     end
     n.nmcmc = round(Int, n.nmcmc_exact)
