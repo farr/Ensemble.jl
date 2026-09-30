@@ -2,3 +2,5 @@
 .ipynb_checkpoints
 *.jl.cov
 *.jl.mem
+Manifest.toml
+.DS_Store
